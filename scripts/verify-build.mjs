@@ -43,8 +43,8 @@ for (const pathname of [
   "/src/dungeon-generator.js",
   "/src/game.js",
   "/assets/boss-eheng-portrait.png",
-  "/assets/li-xingyao-portrait-v4-loop-sharp.mp4",
-  "/assets/li-xingyao-animation-v4/keyframe-01.png",
+  "/assets/li-xingyao-portrait-v5-loop-locked.mp4",
+  "/assets/li-xingyao-animation-v5/keyframe-01.png",
 ]) {
   const response = await fetchPath(pathname);
   assert.equal(response.status, 200, `${pathname} should be deployable`);

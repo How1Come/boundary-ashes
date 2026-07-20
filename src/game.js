@@ -32,7 +32,7 @@ const volumeValue = document.getElementById("volume-value");
 const muteButton = document.getElementById("mute-button");
 const portraitVideo = document.getElementById("hero-portrait-video");
 const portraitImage = new Image();
-portraitImage.src = "./assets/li-xingyao-animation-v4/keyframe-01.png";
+portraitImage.src = "./assets/li-xingyao-animation-v5/keyframe-01.png";
 const bossPortraitImage = new Image();
 bossPortraitImage.src = "./assets/boss-eheng-portrait.png";
 
