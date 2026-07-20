@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090e1a" />
+    <title>界标余烬 · 黎星遥</title>
+    <link rel="preload" as="image" href="./assets/li-xingyao-animation-v4/keyframe-01.png" />
+    <link rel="preload" as="video" href="./assets/li-xingyao-portrait-v4-loop-sharp.mp4" type="video/mp4" />
+    <link rel="preload" as="image" href="./assets/boss-eheng-portrait.png" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="game-shell" aria-label="界标余烬游戏区域">
+      <canvas id="game" width="1600" height="900"></canvas>
+
+      <section id="title-screen" class="panel-screen visible">
+        <video
+          id="hero-portrait-video"
+          class="hero-portrait"
+          autoplay
+          loop
+          muted
+          playsinline
+          preload="auto"
+          poster="./assets/li-xingyao-animation-v4/keyframe-01.png"
+          role="img"
+          aria-label="风中持弓的精灵界标射手黎星遥"
+        >
+          <source src="./assets/li-xingyao-portrait-v4-loop-sharp.mp4" type="video/mp4" />
+        </video>
+        <div class="title-content">
+          <div class="title-mark" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <p class="eyebrow">BOUNDARY ASHES</p>
+          <h1>界标余烬</h1>
+          <p class="subtitle">黎星遥 · 精灵界标射手</p>
+          <p class="intro-copy">
+            深界正在吞没最后的星图。收集星痕、解放失落界律，<br />
+            在不断重构的遗迹中重新掌握魔法箭与灵舞。
+          </p>
+          <div class="control-grid" aria-label="操作说明">
+            <span><kbd>WASD</kbd> 移动</span>
+            <span><kbd>鼠标</kbd> 瞄准</span>
+            <span><kbd>按住左键</kbd> 蓄力射击</span>
+            <span><kbd>Space</kbd> 翻滚齐射（解锁）</span>
+            <span><kbd>Q</kbd> 召唤 / 回收契灵</span>
+            <span><kbd>E</kbd> 切换魔法箭（解锁）</span>
+            <span><kbd>R</kbd> 灵舞（解锁）</span>
+            <span><kbd>Esc</kbd> 暂停</span>
+          </div>
+          <div class="title-actions">
+            <button id="start-button" class="primary-button">踏入深界</button>
+            <button id="tutorial-button" class="secondary-button">新手引导</button>
+            <button id="bestiary-button" class="secondary-button">怪物图鉴</button>
+            <button id="title-settings-button" class="secondary-button">设置</button>
+          </div>
+          <p class="microcopy">建议佩戴耳机 · 首次点击后启用音效</p>
+        </div>
+      </section>
+
+      <section id="pause-screen" class="panel-screen compact" aria-hidden="true">
+        <p class="eyebrow">JOURNEY SUSPENDED</p>
+        <h2>星轨暂歇</h2>
+        <p>按 <kbd>Esc</kbd> 继续</p>
+        <div class="pause-actions">
+          <button id="pause-bestiary-button" class="secondary-button">查看怪物图鉴</button>
+          <button id="pause-settings-button" class="secondary-button">声音设置</button>
+        </div>
+      </section>
+
+      <section id="settings-screen" class="panel-screen settings-screen" aria-hidden="true">
+        <div class="settings-shell">
+          <header class="settings-header">
+            <div>
+              <p class="eyebrow">STARSTRING TUNING</p>
+              <h2>设置</h2>
+            </div>
+            <button id="settings-close" class="settings-close" aria-label="关闭设置">关闭 ×</button>
+          </header>
+          <div class="settings-body">
+            <div class="sound-emblem" aria-hidden="true">
+              <span></span><i></i><b></b>
+            </div>
+            <div class="settings-copy">
+              <p class="settings-kicker">声音 · SOUND</p>
+              <h3>调整星弦回响</h3>
+              <p>控制全部弓弦、魔法箭、命中反馈与界律提示音。设置会自动保存。</p>
+            </div>
+            <div class="volume-control">
+              <label for="volume-slider">
+                <span>主音量</span>
+                <output id="volume-value" for="volume-slider">70%</output>
+              </label>
+              <input id="volume-slider" type="range" min="0" max="100" step="1" value="70" aria-label="主音量" />
+              <div class="volume-scale" aria-hidden="true"><span>静谧</span><span>清响</span></div>
+            </div>
+            <div class="settings-actions">
+              <button id="mute-button" class="sound-toggle" type="button" aria-pressed="false">静音 · 关闭</button>
+              <button id="sound-preview-button" class="primary-button sound-preview" type="button">试听弓弦</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="bestiary-screen" class="panel-screen codex-screen" aria-hidden="true">
+        <div class="codex-shell">
+          <header class="codex-header">
+            <div>
+              <p class="eyebrow">BOUNDARY ARCHIVE</p>
+              <h2>深界怪物图鉴</h2>
+            </div>
+            <button id="bestiary-close" class="codex-close" aria-label="关闭怪物图鉴">关闭 ×</button>
+          </header>
+          <div class="codex-layout">
+            <nav id="bestiary-list" class="codex-list" aria-label="怪物条目"></nav>
+            <article class="codex-entry">
+              <div id="codex-visual" class="codex-visual">
+                <img id="codex-portrait" alt="" />
+                <div id="codex-glyph" class="codex-glyph" aria-hidden="true"><i></i></div>
+                <span id="codex-index" class="codex-index"></span>
+              </div>
+              <div class="codex-copy">
+                <div class="codex-name-row">
+                  <div>
+                    <p id="codex-class" class="codex-class"></p>
+                    <h3 id="codex-name"></h3>
+                  </div>
+                  <span id="codex-threat" class="codex-threat"></span>
+                </div>
+                <p id="codex-lore" class="codex-lore"></p>
+                <div id="codex-tags" class="codex-tags"></div>
+                <div class="codex-notes">
+                  <section>
+                    <span>行为观测</span>
+                    <p id="codex-behavior"></p>
+                  </section>
+                  <section>
+                    <span>应对建议</span>
+                    <p id="codex-counter"></p>
+                  </section>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="boss-intro-screen" class="panel-screen boss-intro-screen" aria-hidden="true">
+        <img src="./assets/boss-eheng-portrait.png" alt="失序司界厄衡" />
+        <div class="boss-intro-copy">
+          <p id="boss-intro-eyebrow" class="eyebrow">BOUNDARY SOVEREIGN</p>
+          <h2 id="boss-intro-title">失序司界 · 厄衡</h2>
+          <p id="boss-intro-lore">前代界标校准者。它将所有偏离视为错误，并以破碎星图抹去不应存在的道路。</p>
+          <div class="boss-phase-preview">
+            <span id="boss-phase-one">Ⅰ 裁界观测</span>
+            <span id="boss-phase-two">Ⅱ 七锚封律</span>
+            <span id="boss-phase-three">Ⅲ 失序崩解</span>
+          </div>
+          <button id="boss-intro-continue" class="primary-button">迎战司界</button>
+        </div>
+      </section>
+
+      <section id="choice-screen" class="panel-screen" aria-hidden="true">
+        <p class="eyebrow">STAR ECHO</p>
+        <h2>选择一枚星痕</h2>
+        <p class="choice-hint">同名星痕会因品阶产生不同强度；高级星痕更加罕见</p>
+        <div id="choices" class="choice-grid"></div>
+        <div class="rarity-legend" aria-label="星痕稀有度概率">
+          <span class="white"><i></i>白 57%</span>
+          <span class="blue"><i></i>蓝 28%</span>
+          <span class="purple"><i></i>紫 12%</span>
+          <span class="gold"><i></i>金 3%</span>
+        </div>
+        <p class="microcopy">点击卡牌或按数字键 1 / 2 / 3</p>
+      </section>
+
+      <section id="end-screen" class="panel-screen" aria-hidden="true">
+        <p id="end-eyebrow" class="eyebrow">JOURNEY ENDED</p>
+        <h2 id="end-title">星图黯淡</h2>
+        <p id="end-copy" class="intro-copy"></p>
+        <div id="run-stats" class="run-stats"></div>
+        <button id="restart-button" class="primary-button">重构地牢</button>
+      </section>
+
+      <div id="toast" aria-live="polite"></div>
+
+      <aside id="tutorial-dialog" aria-live="polite" aria-hidden="true">
+        <div class="will-avatar" aria-hidden="true">
+          <span class="will-orbit orbit-one"></span>
+          <span class="will-orbit orbit-two"></span>
+          <span class="will-eye"><i></i></span>
+        </div>
+        <div class="tutorial-copy">
+          <div class="tutorial-meta">
+            <strong>天意</strong>
+            <span id="tutorial-step-label">界律引导</span>
+          </div>
+          <h3 id="tutorial-title">星弦初醒</h3>
+          <p id="tutorial-text"></p>
+          <div class="tutorial-footer">
+            <span id="tutorial-key"></span>
+            <div id="tutorial-progress" aria-label="引导进度"></div>
+          </div>
+        </div>
+        <div class="tutorial-actions">
+          <button id="tutorial-next" class="dialog-button">继续</button>
+          <button id="tutorial-skip" class="dialog-link">跳过引导</button>
+        </div>
+      </aside>
+
+      <div id="rotate-hint">请将设备横置以获得完整视野</div>
+    </main>
+    <script src="./src/dungeon-generator.js" defer></script>
+    <script src="./src/game.js" defer></script>
+  </body>
+</html>
