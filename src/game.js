@@ -31,6 +31,11 @@ const volumeSlider = document.getElementById("volume-slider");
 const volumeValue = document.getElementById("volume-value");
 const muteButton = document.getElementById("mute-button");
 const portraitVideo = document.getElementById("hero-portrait-video");
+const engineerHero = document.getElementById("engineer-hero");
+const characterSubtitle = document.getElementById("character-subtitle");
+const characterIntro = document.getElementById("character-intro");
+const controlGrid = document.getElementById("control-grid");
+const characterButtons = [...document.querySelectorAll("[data-character]")];
 const portraitImage = new Image();
 portraitImage.src = "./assets/li-xingyao-animation-v5/keyframe-01.png";
 const bossPortraitImage = new Image();
@@ -131,7 +136,35 @@ const MAGIC = [
   { key: "breeze", name: "清风", color: "#9fcbff", icon: "愈", cost: 10 },
 ];
 
-const TUTORIAL_STEPS = [
+const ROBOT_CONFIGS = [
+  { key: "healing", name: "治疗配置", short: "疗", color: "#72e0b3" },
+  { key: "energy", name: "能量配置", short: "能", color: "#69b9ff" },
+  { key: "control", name: "控制配置", short: "控", color: "#b692ff" },
+  { key: "enhance", name: "强化配置", short: "强", color: "#e4b968" },
+];
+
+const CHARACTER_PROFILES = {
+  xingyao: {
+    name: "黎星遥",
+    subtitle: "黎星遥 · 精灵界标射手",
+    intro: "深界正在吞没最后的星图。收集星痕、解放失落界律，<br />在不断重构的遗迹中重新掌握魔法箭与灵舞。",
+    controls: [
+      ["WASD", "移动"], ["鼠标", "瞄准"], ["按住左键", "蓄力射击"], ["Space", "翻滚齐射（解锁）"],
+      ["Q", "召唤 / 回收契灵"], ["E", "切换魔法箭（解锁）"], ["R", "灵舞（解锁）"], ["Esc", "暂停"],
+    ],
+  },
+  wenyu: {
+    name: "程闻屿",
+    subtitle: "程闻屿 · 归恒机巧支援",
+    intro: "把战场拆解成可维护的网络。设定配置、制造机器人，<br />用持续补给、控制与机甲回收维持整支队伍。",
+    controls: [
+      ["WASD", "移动"], ["鼠标", "瞄准 / 选择机器人"], ["按住左键", "脉冲射击"], ["Space", "重设并修复"],
+      ["Q", "切换机器人配置"], ["E", "进入 / 退出绑定"], ["R", "回收并机甲变身"], ["Esc", "暂停"],
+    ],
+  },
+};
+
+const XINGYAO_TUTORIAL_STEPS = [
   {
     id: "welcome",
     title: "星弦初醒",
@@ -206,6 +239,80 @@ const TUTORIAL_STEPS = [
     id: "complete",
     title: "界律已经回应",
     text: "你已走完第一段星轨。记住：万斥建立界缚，箭种决定收益，翻滚组织齐射，灵舞完成爆发。真正的深界不会如此安静。",
+    key: "引导完成 · 可进入正式地牢",
+    manual: true,
+    final: true,
+  },
+];
+
+const WENYU_TUTORIAL_STEPS = [
+  {
+    id: "engineer_welcome",
+    title: "归恒网络上线",
+    text: "程闻屿，我是‘天意’。这里是归恒校准庭。你不必亲自承担所有火力——先让每一台机器知道自己该成为什么、又该守护谁。",
+    key: "准备好后继续",
+    manual: true,
+  },
+  {
+    id: "engineer_move",
+    title: "保持网络阵位",
+    text: "使用方向键移动。机器人会围绕你重整随行阵位，并自动避开场景障碍；移动一段距离，让随行协议完成校准。",
+    key: "W A S D · 移动一段距离",
+    focus: "player",
+  },
+  {
+    id: "engineer_attack",
+    title: "固定频率脉冲",
+    text: "将光标对准校准傀儡并按住鼠标左键。脉冲发射器按固定冷却连续射击，点击速度不会突破它的攻击间隔。",
+    key: "按住 鼠标左键 · 命中傀儡",
+    focus: "target",
+  },
+  {
+    id: "engineer_config",
+    title: "设定下一台机器",
+    text: "按 Q 在治疗、能量、控制与强化配置间轮换。这里只改变下一台机器人的制造蓝图，已经在场的机器人会保留自己的独立配置。",
+    key: "Q · 切换一次制造配置",
+    focus: "q",
+  },
+  {
+    id: "engineer_manufacture",
+    title: "自动制造",
+    text: "制造能量会自行恢复，并受冷却缩减影响。能量充满时，系统会按当前蓝图自动制造机器人并清空能量；观察制造环完成。",
+    key: "无需按键 · 等待制造能量充满",
+    focus: "player",
+  },
+  {
+    id: "engineer_robot_attack",
+    title: "自主远程支援",
+    text: "机器人会优先攻击附近威胁，每次命中都能回收机体能量，并附加减速与短暂晕眩。让它自行命中新的校准傀儡。",
+    key: "保持在场 · 等待机器人命中",
+    focus: "robot_target",
+  },
+  {
+    id: "engineer_bind",
+    title: "批量绑定友军",
+    text: "我已暂时解除这台机器的绑定。按 E 进入持续指定状态，再点击机器人把它绑定给程闻屿；完成后可再次按 E 退出。",
+    key: "E · 进入绑定模式，再点击机器人",
+    focus: "binding",
+  },
+  {
+    id: "engineer_reset",
+    title: "重设并修复",
+    text: "先按 Q 选择另一种配置，再按 Space。系统会把所选或最近的机器人改写为当前配置，同时修复耐久；技能最多储存三次。",
+    key: "Q · 更换配置，然后 Space · 重设",
+    focus: "space",
+  },
+  {
+    id: "engineer_mech",
+    title: "回收与机甲变身",
+    text: "按 R 回收全部机器人。它们的机体资源会转回制造能量，并展开短续航机甲；变身会持续消耗制造能量，耗尽后网络重新启动。",
+    key: "R · 回收机器人并展开机甲",
+    focus: "r",
+  },
+  {
+    id: "engineer_complete",
+    title: "归恒链路稳定",
+    text: "配置决定职能，绑定决定服务对象，重设负责临场改写，回收则把整张网络压缩成一次机甲窗口。真正的深界会迫使你不断重排这四个环节。",
     key: "引导完成 · 可进入正式地牢",
     manual: true,
     final: true,
@@ -634,6 +741,7 @@ class Arrow {
 
   color() {
     if (this.kind === "force") return COLORS.force;
+    if (this.kind === "tech") return "#63d8d0";
     if (this.kind === "normal") return COLORS.gold;
     return MAGIC.find((m) => m.key === this.kind)?.color || COLORS.text;
   }
@@ -685,6 +793,10 @@ class Arrow {
 
   onHit(enemy, game) {
     game.recordTutorialHit(this.kind, enemy, this.source);
+    if (this.source === "player" && game.player?.characterId === "wenyu") {
+      game.player.lastAttackTarget = enemy;
+      game.player.lastAttackTargetTimer = 2.6;
+    }
     let amount = this.damage;
     if (this.kind === "force") {
       if (enemy.tetherTime > 0) {
@@ -772,6 +884,13 @@ class EnemyProjectile {
     for (const obstacle of game.currentRoom.obstacles) {
       if (Math.hypot(this.x - obstacle.x, this.y - obstacle.y) < obstacle.r + this.r) this.dead = true;
     }
+    if (!this.dead && game.player?.robots) {
+      const robot = game.player.robots.find((unit) => !unit.dead && Math.hypot(this.x - unit.x, this.y - unit.y) < unit.r + this.r);
+      if (robot) {
+        robot.takeDamage(this.damage * 0.72);
+        this.dead = true;
+      }
+    }
     if (!this.dead && Math.hypot(this.x - game.player.x, this.y - game.player.y) < game.player.r + this.r) {
       game.player.hurt(this.damage, Math.atan2(this.vy, this.vx));
       this.dead = true;
@@ -839,6 +958,22 @@ class BossHazard {
       hit = Math.hypot(game.player.x - this.x, game.player.y - this.y) > this.radius - game.player.r;
     }
     if (hit) game.player.hurt(this.damage, Math.atan2(game.player.y - this.y, game.player.x - this.x));
+    if (game.player?.robots) {
+      for (const robot of game.player.robots) {
+        if (robot.dead) continue;
+        let robotHit = false;
+        if (this.type === "line") {
+          const dx = robot.x - this.x;
+          const dy = robot.y - this.y;
+          robotHit = Math.abs(-Math.sin(this.angle) * dx + Math.cos(this.angle) * dy) < this.width / 2 + robot.r;
+        } else if (this.type === "circle") {
+          robotHit = Math.hypot(robot.x - this.x, robot.y - this.y) < this.radius + robot.r;
+        } else if (this.type === "outside") {
+          robotHit = Math.hypot(robot.x - this.x, robot.y - this.y) > this.radius - robot.r;
+        }
+        if (robotHit) robot.takeDamage(this.damage * 0.72);
+      }
+    }
     game.shake = Math.max(game.shake, this.type === "outside" ? 13 : 8);
     game.shockwave(this.x, this.y, this.color, this.type === "line" ? 80 : this.radius);
     game.sound.tone(this.type === "outside" ? 70 : 105, 0.3, "sawtooth", 0.14, -35);
@@ -971,6 +1106,10 @@ class Enemy {
     this.tetherStacks = 0;
     this.tetherBoost = 0;
     this.tetherTick = 0;
+    this.networkSlowTimer = 0;
+    this.networkSlow = 0;
+    this.networkWeakenTimer = 0;
+    this.networkWeaken = 0;
     this.state = "idle";
     this.stateTimer = 0;
     this.summonStage = 0;
@@ -1009,6 +1148,10 @@ class Enemy {
     this.attackTimer -= dt;
     this.specialTimer -= dt;
     this.stateTimer -= dt;
+    this.networkSlowTimer = Math.max(0, this.networkSlowTimer - dt);
+    this.networkWeakenTimer = Math.max(0, this.networkWeakenTimer - dt);
+    if (this.networkSlowTimer <= 0) this.networkSlow = 0;
+    if (this.networkWeakenTimer <= 0) this.networkWeaken = 0;
     this.phase += dt * (this.type === "boss" ? 0.8 : 1.5);
     this.updateTether(dt, game);
     if (this.type === "dummy" || this.type === "anchor") {
@@ -1059,7 +1202,14 @@ class Enemy {
     const tangentY = dx / d;
     this.vx = (dx / d * direction + tangentX * orbit) * this.speed * speedFactor;
     this.vy = (dy / d * direction + tangentY * orbit) * this.speed * speedFactor;
+    const networkSpeed = 1 - clamp(this.networkSlow || 0, 0, 0.7);
+    this.vx *= networkSpeed;
+    this.vy *= networkSpeed;
     return { dx, dy, d, angle: Math.atan2(dy, dx) };
+  }
+
+  outgoingDamage() {
+    return this.damage * (1 - clamp(this.networkWeaken || 0, 0, 0.55));
   }
 
   updateStandard(dt, game) {
@@ -1071,7 +1221,7 @@ class Enemy {
         this.vx = Math.cos(this.chargeAngle) * 440;
         this.vy = Math.sin(this.chargeAngle) * 440;
         if (dist(this, game.player) < this.r + game.player.r + 7 && this.attackTimer <= 0) {
-          game.player.hurt(this.damage * 1.25, this.chargeAngle);
+          game.player.hurt(this.outgoingDamage() * 1.25, this.chargeAngle);
           this.attackTimer = 1;
         }
       }
@@ -1082,7 +1232,7 @@ class Enemy {
     if (this.type === "wraith") {
       const target = this.seekVelocity(game, 0, Math.sin(this.phase) * 0.12);
       if (target.d < this.r + game.player.r + 8 && this.attackTimer <= 0) {
-        game.player.hurt(this.damage, target.angle);
+        game.player.hurt(this.outgoingDamage(), target.angle);
         this.attackTimer = 1.15;
         this.vx *= -1.6;
         this.vy *= -1.6;
@@ -1090,7 +1240,7 @@ class Enemy {
     } else if (this.type === "archer") {
       const target = this.seekVelocity(game, 330, Math.sin(this.phase) * 0.44);
       if (this.attackTimer <= 0 && target.d < 620) {
-        game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle, 390, this.damage, "#e38da1", 6));
+        game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle, 390, this.outgoingDamage(), "#e38da1", 6));
         game.spark(this.x, this.y, "#e38da1", 4);
         this.attackTimer = 1.65;
       }
@@ -1102,7 +1252,7 @@ class Enemy {
         this.chargeAngle = target.angle;
         this.specialTimer = 5.2;
       } else if (target.d < this.r + game.player.r + 13 && this.attackTimer <= 0) {
-        game.player.hurt(this.damage, target.angle);
+        game.player.hurt(this.outgoingDamage(), target.angle);
         game.shockwave(this.x, this.y, "#c88970", 58);
         this.attackTimer = 1.7;
       }
@@ -1110,7 +1260,7 @@ class Enemy {
       const target = this.seekVelocity(game, 270, 0.72);
       if (this.attackTimer <= 0) {
         for (let i = -1; i <= 1; i += 1) {
-          game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle + i * 0.18, 315, this.damage, "#ab91dd", 7));
+          game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle + i * 0.18, 315, this.outgoingDamage(), "#ab91dd", 7));
         }
         this.attackTimer = 2.25;
       }
@@ -1421,9 +1571,183 @@ class Enemy {
   }
 }
 
+class RobotBolt extends Arrow {
+  constructor(robot, target, damage) {
+    const angle = Math.atan2(target.y - robot.y, target.x - robot.x);
+    super(robot.x, robot.y, angle, damage, "tech", "robot", 0.45);
+    this.robot = robot;
+    this.config = robot.config;
+    this.speed = 760;
+    this.vx = Math.cos(angle) * this.speed;
+    this.vy = Math.sin(angle) * this.speed;
+    this.radius = 6;
+    this.pierce = 1;
+  }
+
+  color() {
+    return this.config.color;
+  }
+
+  onHit(enemy, game) {
+    if (!this.robot || this.robot.dead) {
+      this.dead = true;
+      return;
+    }
+    const owner = this.robot.owner;
+    game.recordTutorialHit("robot", enemy, "robot");
+    let damage = this.damage * owner.robotDamageMod;
+    enemy.networkSlowTimer = Math.max(enemy.networkSlowTimer || 0, this.config.key === "control" ? 1.8 : 1.1);
+    enemy.networkSlow = Math.max(enemy.networkSlow || 0, this.config.key === "control" ? 0.42 : this.config.key === "enhance" ? 0.3 : 0.16);
+    enemy.stun = Math.max(enemy.stun, this.config.key === "control" ? 0.34 * owner.robotControlMod : 0.1);
+    if (this.config.key === "enhance") {
+      enemy.networkWeakenTimer = Math.max(enemy.networkWeakenTimer || 0, 2.4);
+      enemy.networkWeaken = Math.max(enemy.networkWeaken || 0, 0.16 * owner.robotEnhanceMod);
+    }
+    if (this.config.key === "healing") this.robot.repair(4.2 * owner.robotHealMod);
+    const energyGain = this.config.key === "energy" ? 8.5 : 4.5;
+    this.robot.energy = Math.min(this.robot.maxEnergy, this.robot.energy + energyGain * owner.robotEnergyMod);
+    game.damageEnemy(enemy, damage, "tech", this.angle);
+    game.shockwave(enemy.x, enemy.y, this.config.color, enemy.r + 12);
+    this.dead = true;
+  }
+}
+
+class SupportRobot {
+  constructor(owner, configIndex, index) {
+    this.id = entityId += 1;
+    this.owner = owner;
+    this.game = owner.game;
+    this.configIndex = configIndex;
+    this.x = owner.x + Math.cos(index * 1.7) * 54;
+    this.y = owner.y + Math.sin(index * 1.7) * 54;
+    this.r = 13;
+    this.phase = rand(TAU);
+    this.energy = 27;
+    this.maxEnergy = 44;
+    this.durability = 56 * owner.robotDurabilityMod;
+    this.maxDurability = this.durability;
+    this.attackTimer = rand(1.1, 0.25);
+    this.bound = true;
+    this.dead = false;
+    this.hitFlash = 0;
+    this.currentTarget = null;
+  }
+
+  get config() {
+    return ROBOT_CONFIGS[this.configIndex];
+  }
+
+  update(dt, index, total) {
+    if (this.dead) return;
+    this.phase += dt * (1.2 + index * 0.05);
+    this.hitFlash = Math.max(0, this.hitFlash - dt * 5);
+    this.energy = Math.min(this.maxEnergy, this.energy + dt * 1.15 * this.owner.robotEnergyMod);
+    const spacing = Math.min(TAU / Math.max(1, total), 1.05);
+    const angle = this.phase * 0.34 + index * spacing - Math.PI / 2;
+    const orbit = 54 + Math.floor(index / 6) * 24;
+    const targetX = this.owner.x + Math.cos(angle) * orbit;
+    const targetY = this.owner.y - 24 + Math.sin(angle) * orbit * 0.68;
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const response = 1 - Math.pow(0.006, dt);
+    this.x += dx * response;
+    this.y += dy * response;
+    this.game.resolveObstacleOverlap(this);
+
+    if (this.bound && this.energy > 0.5) {
+      const resourceRate = (this.config.key === "energy" ? 2.25 : 1.15) * this.owner.robotEnergyMod;
+      const spend = Math.min(this.energy, dt * (this.config.key === "energy" ? 2.8 : 1.9));
+      this.energy -= spend;
+      this.owner.energy = Math.min(this.owner.maxEnergy, this.owner.energy + dt * resourceRate);
+      if (this.config.key === "healing" && this.owner.hp < this.owner.maxHp && this.energy > 1) {
+        this.energy = Math.max(0, this.energy - dt * 1.35);
+        this.owner.heal(dt * 0.72 * this.owner.robotHealMod);
+      }
+    }
+
+    const speedScale = this.owner.effectiveAttackSpeed() * this.owner.effectiveCooldownRate();
+    this.attackTimer -= dt * speedScale;
+    const ownerTarget = this.owner.lastAttackTargetTimer > 0 && this.owner.lastAttackTarget && !this.owner.lastAttackTarget.dead
+      && Math.hypot(this.owner.lastAttackTarget.x - this.x, this.owner.lastAttackTarget.y - this.y) <= 820
+      ? this.owner.lastAttackTarget
+      : null;
+    const target = ownerTarget || this.game.nearestEnemy(this.x, this.y, 650);
+    this.currentTarget = target;
+    if (target && this.attackTimer <= 0) {
+      const base = this.config.key === "enhance" ? 8.4 : this.config.key === "control" ? 6.4 : 7.2;
+      this.game.arrows.push(new RobotBolt(this, target, base * this.owner.effectiveDamage()));
+      this.attackTimer = this.config.key === "energy" ? 1.25 : 1.52;
+      this.game.sound.tone(330 + this.configIndex * 75, 0.08, "triangle", 0.035, 95, { pan: clamp((this.x - W / 2) / 700, -1, 1) });
+    }
+  }
+
+  repair(amount) {
+    this.durability = Math.min(this.maxDurability, this.durability + amount);
+  }
+
+  takeDamage(amount) {
+    if (this.dead) return;
+    this.durability -= amount;
+    this.energy = Math.min(this.maxEnergy, this.energy + amount * 0.42 * this.owner.robotEnergyMod);
+    this.hitFlash = 1;
+    this.game.spark(this.x, this.y, this.config.color, 6);
+    if (this.durability <= 0) this.explode();
+  }
+
+  explode(recycled = false) {
+    if (this.dead) return;
+    this.dead = true;
+    if (!recycled) {
+      const damage = 18 * this.owner.robotDamageMod;
+      for (const enemy of this.game.enemies) {
+        const distance = dist(this, enemy);
+        if (distance <= 105 + enemy.r) this.game.damageEnemy(enemy, damage * (1 - clamp(distance / 150, 0, 0.65)), "tech", Math.atan2(enemy.y - this.y, enemy.x - this.x));
+      }
+      this.owner.energy = Math.min(this.owner.maxEnergy, this.owner.energy + this.energy * 0.7);
+      this.game.shockwave(this.x, this.y, this.config.color, 105);
+      this.game.spark(this.x, this.y, this.config.color, 18);
+    }
+  }
+
+  draw(context) {
+    const config = this.config;
+    context.save();
+    context.translate(this.x, this.y);
+    context.rotate(this.phase * 0.45);
+    context.globalAlpha = this.bound ? 1 : 0.5;
+    context.fillStyle = "rgba(4,9,14,0.88)";
+    context.strokeStyle = config.color;
+    context.lineWidth = 2;
+    context.shadowColor = config.color;
+    context.shadowBlur = 15;
+    polygon(context, [[0, -14], [13, -5], [11, 9], [0, 15], [-11, 9], [-13, -5]]);
+    context.fill();
+    context.stroke();
+    context.rotate(-this.phase * 0.9);
+    context.fillStyle = config.color;
+    context.beginPath();
+    context.arc(0, 0, 4.5, 0, TAU);
+    context.fill();
+    context.shadowBlur = 0;
+    context.strokeStyle = this.hitFlash > 0 ? "#fff" : "rgba(220,239,236,0.38)";
+    context.beginPath();
+    context.arc(0, 0, 18, 0, TAU * (this.durability / this.maxDurability));
+    context.stroke();
+    if (!this.bound) {
+      context.strokeStyle = "rgba(190,204,207,0.38)";
+      context.setLineDash([3, 4]);
+      context.beginPath();
+      context.arc(0, 0, 23, 0, TAU);
+      context.stroke();
+    }
+    context.restore();
+  }
+}
+
 class Player {
   constructor(game) {
     this.game = game;
+    this.characterId = "xingyao";
     this.x = W / 2;
     this.y = H / 2;
     this.r = 18;
@@ -1972,6 +2296,377 @@ class Player {
   }
 }
 
+class EngineerPlayer extends Player {
+  constructor(game) {
+    super(game);
+    this.characterId = "wenyu";
+    this.r = 19;
+    this.maxHp = 82;
+    this.hp = this.maxHp;
+    this.maxEnergy = 100;
+    this.energy = 28;
+    this.baseSpeed = 198;
+    this.baseAttackInterval = 0.68;
+    this.charge = 0;
+    this.spiritActive = false;
+    this.magicUnlocked = true;
+    this.rollUnlocked = true;
+    this.danceUnlocked = true;
+    this.configIndex = 0;
+    this.bindingMode = false;
+    this.robots = [];
+    this.manufactureRate = 5.4;
+    this.manufacturedCount = 0;
+    this.rollCharges = 3;
+    this.maxRollCharges = 3;
+    this.rollRecharge = 0;
+    this.rollRechargeTime = 8.2;
+    this.qCooldown = 0;
+    this.qCooldownMax = 0.22;
+    this.danceCooldown = 0;
+    this.danceCooldownMax = 24;
+    this.danceDuration = 9;
+    this.mechDrain = 13.5;
+    this.robotDamageMod = 1;
+    this.robotDurabilityMod = 1;
+    this.robotEnergyMod = 1;
+    this.robotHealMod = 1;
+    this.robotControlMod = 1;
+    this.robotEnhanceMod = 1;
+    this.mechDamageMod = 1;
+    this.lastAttackTarget = null;
+    this.lastAttackTargetTimer = 0;
+    this.boundEnhanceCount = 0;
+  }
+
+  get currentMagic() {
+    return ROBOT_CONFIGS[this.configIndex];
+  }
+
+  effectiveCooldownRate() {
+    return this.cooldownMod * (1 + Math.min(0.22, this.boundEnhanceCount * 0.035 * this.robotEnhanceMod));
+  }
+
+  effectiveAttackSpeed() {
+    return this.attackSpeedMod * (this.dancing ? 1.34 : 1);
+  }
+
+  effectiveChargeRate() {
+    return 1;
+  }
+
+  effectiveDamage() {
+    const networkDamage = 1 + Math.min(0.28, this.boundEnhanceCount * 0.04 * this.robotEnhanceMod);
+    return this.damageMod * networkDamage * (this.dancing ? this.mechDamageMod : 1);
+  }
+
+  update(dt) {
+    this.robots = this.robots.filter((robot) => !robot.dead);
+    this.boundEnhanceCount = this.robots.reduce(
+      (count, robot) => count + (robot.bound && robot.config.key === "enhance" ? 1 : 0),
+      0,
+    );
+    this.invulnerable = Math.max(0, this.invulnerable - dt);
+    this.hurtFlash = Math.max(0, this.hurtFlash - dt * 3.3);
+    this.attackCooldown = Math.max(0, this.attackCooldown - dt);
+    this.qCooldown = Math.max(0, this.qCooldown - dt);
+    this.danceCooldown = Math.max(0, this.danceCooldown - dt * this.effectiveCooldownRate());
+    this.stepPhase += dt * (this.dancing ? 11 : 7);
+    this.lastAttackTargetTimer = Math.max(0, this.lastAttackTargetTimer - dt);
+    if (this.lastAttackTargetTimer <= 0 || this.lastAttackTarget?.dead) this.lastAttackTarget = null;
+    this.updateMovement(dt);
+
+    if (this.rollCharges < this.maxRollCharges) {
+      this.rollRecharge += dt * this.effectiveCooldownRate();
+      if (this.rollRecharge >= this.rollRechargeTime) {
+        this.rollRecharge -= this.rollRechargeTime;
+        this.rollCharges += 1;
+        this.game.sound.tone(470, 0.12, "triangle", 0.045, 130);
+      }
+    } else {
+      this.rollRecharge = 0;
+    }
+
+    if (this.dancing) {
+      this.danceTimer -= dt;
+      this.energy = Math.max(0, this.energy - this.mechDrain * dt);
+      this.invulnerable = Math.max(this.invulnerable, 0.045);
+      if (this.energy <= 0 || this.danceTimer <= 0) this.endDance();
+      if (Math.random() < dt * 18) {
+        const angle = rand(TAU);
+        this.game.effects.push(new Effect("particle", this.x + Math.cos(angle) * 34, this.y + Math.sin(angle) * 34, {
+          vx: -Math.cos(angle) * 55,
+          vy: -Math.sin(angle) * 55,
+          color: this.currentMagic.color,
+          life: 0.32,
+          size: 5,
+          rotation: angle,
+        }));
+      }
+    } else {
+      this.energy = Math.min(this.maxEnergy, this.energy + this.manufactureRate * this.effectiveCooldownRate() * dt);
+      if (this.energy >= this.maxEnergy - 0.001) this.manufactureRobot();
+    }
+
+    this.robots.forEach((robot, index) => robot.update(dt, index, this.robots.length));
+    if (input.mouse.down && !this.bindingMode && this.attackCooldown <= 0) this.shoot();
+  }
+
+  updateMovement(dt) {
+    let dx = 0;
+    let dy = 0;
+    if (input.keys.has("KeyA")) dx -= 1;
+    if (input.keys.has("KeyD")) dx += 1;
+    if (input.keys.has("KeyW")) dy -= 1;
+    if (input.keys.has("KeyS")) dy += 1;
+    const length = Math.hypot(dx, dy);
+    if (length > 0) {
+      dx /= length;
+      dy /= length;
+      this.lastMove = { x: dx, y: dy };
+      const distance = this.baseSpeed * this.speedMod * (this.dancing ? 1.2 : 1) * dt;
+      this.game.moveActor(this, dx * distance, dy * distance);
+      this.game.stats.moveDistance += distance;
+    }
+    this.facing = Math.atan2(input.mouse.y - this.y, input.mouse.x - this.x);
+  }
+
+  shoot() {
+    this.attackCooldown = this.baseAttackInterval / this.effectiveAttackSpeed();
+    const muzzleX = this.x + Math.cos(this.facing) * (this.dancing ? 31 : 23);
+    const muzzleY = this.y + Math.sin(this.facing) * (this.dancing ? 31 : 23);
+    const crit = Math.random() < this.critChance;
+    const damage = (this.dancing ? 10.5 : 8.2) * this.effectiveDamage() * (crit ? 1.55 : 1);
+    const spread = this.dancing ? 0.055 : 0;
+    this.game.arrows.push(new Arrow(muzzleX, muzzleY, this.facing - spread, damage, "tech", "player", 0.5));
+    if (this.dancing) this.game.arrows.push(new Arrow(muzzleX, muzzleY, this.facing + spread, damage * 0.84, "tech", "player", 0.5));
+    this.game.stats.shots += 1;
+    this.game.sound.tone(this.dancing ? 190 : 245, 0.09, "square", 0.045, 180, { pan: clamp((this.x - W / 2) / 700, -1, 1) });
+    if (crit) this.game.floatText(this.x, this.y - 32, "校准", this.currentMagic.color, 13);
+  }
+
+  toggleSpirit() {
+    if (this.qCooldown > 0) return;
+    this.configIndex = (this.configIndex + 1) % ROBOT_CONFIGS.length;
+    this.qCooldown = this.qCooldownMax;
+    this.game.stats.switches += 1;
+    this.game.showToast(`制造配置 · ${this.currentMagic.name}`);
+    this.game.shockwave(this.x, this.y, this.currentMagic.color, 52);
+    this.game.sound.tone(330 + this.configIndex * 75, 0.18, "triangle", 0.075, 120);
+  }
+
+  switchMagic() {
+    this.bindingMode = !this.bindingMode;
+    input.mouse.down = false;
+    this.game.showToast(this.bindingMode ? "批量绑定模式 · 点击机器人切换绑定" : "绑定指定结束");
+    this.game.shockwave(this.x, this.y, this.currentMagic.color, 66);
+  }
+
+  handlePointerDown() {
+    if (!this.bindingMode) return false;
+    let nearest = null;
+    let distance = 42;
+    for (const robot of this.robots) {
+      const value = Math.hypot(input.mouse.x - robot.x, input.mouse.y - robot.y);
+      if (value < distance) { nearest = robot; distance = value; }
+    }
+    if (!nearest) {
+      this.game.showToast("请选择一台机器人 · E 退出绑定模式");
+      return true;
+    }
+    nearest.bound = !nearest.bound;
+    this.game.stats.bindings += 1;
+    this.game.showToast(`${nearest.config.name} · ${nearest.bound ? "已绑定程闻屿" : "解除绑定"}`);
+    this.game.shockwave(nearest.x, nearest.y, nearest.config.color, 42);
+    return true;
+  }
+
+  startRoll() {
+    if (this.rollCharges <= 0 || this.robots.length === 0) {
+      this.game.showToast(this.robots.length === 0 ? "当前没有可重设的机器人" : "重设储存尚未恢复");
+      return;
+    }
+    let target = null;
+    let best = 175;
+    for (const robot of this.robots) {
+      const distance = Math.hypot(input.mouse.x - robot.x, input.mouse.y - robot.y);
+      if (distance < best) { target = robot; best = distance; }
+    }
+    if (!target) target = this.robots.reduce((closest, robot) => dist(robot, this) < dist(closest, this) ? robot : closest, this.robots[0]);
+    target.configIndex = this.configIndex;
+    target.repair(target.maxDurability * 0.46);
+    target.energy = Math.min(target.maxEnergy, target.energy + 12);
+    this.rollCharges -= 1;
+    this.game.stats.rollUses += 1;
+    this.game.showToast(`重设完成 · ${target.config.name} · 耐久修复`);
+    this.game.shockwave(target.x, target.y, target.config.color, 78);
+    this.game.sound.chime();
+  }
+
+  startDance() {
+    if (this.danceCooldown > 0 || this.dancing) return;
+    if (this.robots.length === 0) {
+      this.game.showToast("没有机器人可供回收");
+      return;
+    }
+    let recovered = 0;
+    for (const robot of this.robots) {
+      recovered += 17 + robot.energy * 0.58 + (robot.durability / robot.maxDurability) * 7;
+      robot.explode(true);
+    }
+    this.robots = [];
+    this.energy = Math.min(this.maxEnergy, this.energy + recovered);
+    if (this.energy < 18) return;
+    this.danceTimer = this.danceDuration;
+    this.danceCooldown = this.danceCooldownMax;
+    this.bindingMode = false;
+    this.game.stats.danceUses += 1;
+    this.game.showToast(`归恒机甲展开 · 回收能量 ${Math.round(recovered)}`);
+    this.game.shockwave(this.x, this.y, "#63d8d0", 145);
+    this.game.sound.tone(115, 0.55, "sawtooth", 0.12, 390);
+  }
+
+  endDance() {
+    const active = this.danceTimer > 0;
+    this.danceTimer = 0;
+    if (active) this.game.showToast("机甲续航结束 · 制造网络重启");
+  }
+
+  manufactureRobot() {
+    if (this.dancing) return;
+    this.energy = 0;
+    const robot = new SupportRobot(this, this.configIndex, this.robots.length);
+    this.robots.push(robot);
+    this.manufacturedCount += 1;
+    this.game.stats.manufactures += 1;
+    this.game.showToast(`自动制造 · ${robot.config.name}机器人 #${this.manufacturedCount}`);
+    this.game.shockwave(robot.x, robot.y, robot.config.color, 66);
+    this.game.sound.chime();
+  }
+
+  onRoomEnter() {
+    this.bindingMode = false;
+    this.robots.forEach((robot, index) => {
+      const angle = (index / Math.max(1, this.robots.length)) * TAU;
+      robot.x = this.x + Math.cos(angle) * 45;
+      robot.y = this.y + Math.sin(angle) * 45;
+      this.game.resolveObstacleOverlap(robot);
+    });
+  }
+
+  onMagicHit() {}
+
+  hurt(amount, angle) {
+    super.hurt(amount * (this.dancing ? 0.72 : 1), angle);
+  }
+
+  drawCompanions(context) {
+    for (const robot of this.robots) {
+      if (robot.bound) {
+        context.save();
+        context.globalAlpha = 0.12;
+        context.strokeStyle = robot.config.color;
+        context.setLineDash([5, 10]);
+        context.lineDashOffset = -this.game.elapsed * 24;
+        context.beginPath();
+        context.moveTo(this.x, this.y);
+        context.lineTo(robot.x, robot.y);
+        context.stroke();
+        context.restore();
+      }
+      robot.draw(context);
+    }
+  }
+
+  draw(context) {
+    const alpha = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0 ? 0.48 : 1;
+    context.save();
+    context.globalAlpha = alpha;
+    context.translate(this.x, this.y);
+    context.rotate(this.facing);
+    const bob = Math.sin(this.stepPhase) * 1.3;
+    context.translate(0, bob);
+    context.fillStyle = "rgba(0,0,0,0.4)";
+    context.beginPath();
+    context.ellipse(-5, 17, this.dancing ? 34 : 27, 10, 0, 0, TAU);
+    context.fill();
+
+    if (this.dancing) {
+      context.strokeStyle = "#63d8d0";
+      context.fillStyle = "#172d34";
+      context.lineWidth = 4;
+      context.shadowColor = "#63d8d0";
+      context.shadowBlur = 16;
+      polygon(context, [[-27, -23], [13, -27], [30, -13], [29, 17], [8, 30], [-26, 21], [-35, 0]]);
+      context.fill();
+      context.stroke();
+      context.strokeStyle = "#d4ad64";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(-22, -17); context.lineTo(16, 20);
+      context.moveTo(-18, 19); context.lineTo(21, -17);
+      context.stroke();
+      context.shadowBlur = 0;
+    } else {
+      context.fillStyle = "#17252d";
+      polygon(context, [[-22, -19], [10, -21], [21, -8], [15, 19], [-8, 25], [-27, 9]]);
+      context.fill();
+      context.fillStyle = "#29464b";
+      polygon(context, [[-15, -14], [8, -15], [13, -4], [6, 17], [-12, 19], [-21, 7]]);
+      context.fill();
+      context.strokeStyle = this.currentMagic.color;
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(-13, -9); context.lineTo(8, 14);
+      context.stroke();
+    }
+
+    context.fillStyle = "#d0b6a2";
+    context.beginPath();
+    context.arc(8, 0, 10.5, 0, TAU);
+    context.fill();
+    context.fillStyle = "#111b23";
+    context.beginPath();
+    context.arc(4, 0, 12, Math.PI * 0.52, Math.PI * 1.48);
+    context.quadraticCurveTo(9, -13, 17, -6);
+    context.lineTo(12, 0);
+    context.fill();
+    context.fillStyle = this.currentMagic.color;
+    context.shadowColor = this.currentMagic.color;
+    context.shadowBlur = 9;
+    context.fillRect(14, -3, 3, 2);
+    context.fillRect(14, 2, 3, 2);
+    context.shadowBlur = 0;
+
+    context.strokeStyle = "#ad8754";
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(4, 10); context.lineTo(24, 8);
+    context.stroke();
+    context.fillStyle = "#223b43";
+    roundedRectPath(context, 19, 2, 24, 12, 4);
+    context.fill();
+    context.strokeStyle = this.currentMagic.color;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(42, 8); context.lineTo(52, 8);
+    context.stroke();
+
+    context.restore();
+
+    if (this.bindingMode) {
+      context.save();
+      context.strokeStyle = this.currentMagic.color;
+      context.globalAlpha = 0.5 + Math.sin(this.game.elapsed * 6) * 0.18;
+      context.setLineDash([8, 8]);
+      context.beginPath();
+      context.arc(input.mouse.x, input.mouse.y, 36, 0, TAU);
+      context.stroke();
+      context.restore();
+    }
+  }
+}
+
 const UPGRADE_RARITIES = [
   { key: "white", name: "白", label: "白色星痕", color: "#c9d4d4", power: 1, weight: 0.57 },
   { key: "blue", name: "蓝", label: "蓝色星痕", color: "#68a9ff", power: 1.65, weight: 0.28 },
@@ -2112,9 +2807,103 @@ const UPGRADES = [
   },
 ];
 
+const ENGINEER_UPGRADES = [
+  {
+    id: "fabrication",
+    name: "恒动制造列",
+    icon: "造",
+    category: "制造 · 自动化",
+    description: (power) => `制造能量恢复速度提高 ${pct(0.085 * power)}%，冷却缩减仍会继续放大恢复速度。`,
+    apply: (p, power) => { p.manufactureRate *= 1 + 0.085 * power; },
+  },
+  {
+    id: "network-damage",
+    name: "协同火控核",
+    icon: "网",
+    category: "机器人 · 火控",
+    description: (power) => `机器人伤害提高 ${pct(0.09 * power)}%，程闻屿攻击速度提高 ${pct(0.045 * power)}%。`,
+    apply: (p, power) => { p.robotDamageMod *= 1 + 0.09 * power; p.attackSpeedMod *= 1 + 0.045 * power; },
+  },
+  {
+    id: "durability",
+    name: "自修复骨架",
+    icon: "甲",
+    category: "机器人 · 耐久",
+    description: (power) => `机器人最大耐久提高 ${pct(0.11 * power)}%，现有机器人立即获得等比例耐久。`,
+    apply: (p, power) => {
+      const ratio = 1 + 0.11 * power;
+      p.robotDurabilityMod *= ratio;
+      p.robots.forEach((robot) => { robot.maxDurability *= ratio; robot.durability *= ratio; });
+    },
+  },
+  {
+    id: "energy-loop",
+    name: "闭环蓄能器",
+    icon: "能",
+    category: "机器人 · 资源",
+    description: (power) => `机器人回能与资源供给提高 ${pct(0.1 * power)}%，制造能量上限维持 100。`,
+    apply: (p, power) => { p.robotEnergyMod *= 1 + 0.1 * power; },
+  },
+  {
+    id: "healing-protocol",
+    name: "温床协议",
+    icon: "疗",
+    category: "治疗配置 · 强化",
+    description: (power) => `治疗配置的自修复与绑定治疗提高 ${pct(0.13 * power)}%。`,
+    apply: (p, power) => { p.robotHealMod *= 1 + 0.13 * power; },
+  },
+  {
+    id: "control-protocol",
+    name: "冻结握手",
+    icon: "控",
+    category: "控制配置 · 强化",
+    description: (power) => `控制配置的晕眩强度提高 ${pct(0.12 * power)}%，机器人伤害小幅提高。`,
+    apply: (p, power) => { p.robotControlMod *= 1 + 0.12 * power; p.robotDamageMod *= 1 + 0.035 * power; },
+  },
+  {
+    id: "enhance-protocol",
+    name: "归恒校准场",
+    icon: "强",
+    category: "强化配置 · 增幅",
+    description: (power) => `强化配置的伤害削弱效果提高 ${pct(0.1 * power)}%，程闻屿伤害提高 ${pct(0.04 * power)}%。`,
+    apply: (p, power) => { p.robotEnhanceMod *= 1 + 0.1 * power; p.damageMod *= 1 + 0.04 * power; },
+  },
+  {
+    id: "reset-cache",
+    name: "热备配置栈",
+    icon: "栈",
+    category: "重设 · 储存",
+    description: (power) => `重设储存恢复时间缩短 ${pct(0.055 * power)}%，修复后额外补充机体能量。`,
+    apply: (p, power) => { p.rollRechargeTime *= 1 - 0.055 * power; p.robots.forEach((robot) => { robot.energy = Math.min(robot.maxEnergy, robot.energy + 3 * power); }); },
+  },
+  {
+    id: "mech-drive",
+    name: "短续航超频",
+    icon: "铠",
+    category: "机甲 · 变身",
+    description: (power) => `机甲伤害提高 ${pct(0.08 * power)}%，能量消耗降低 ${pct(0.045 * power)}%。`,
+    apply: (p, power) => { p.mechDamageMod *= 1 + 0.08 * power; p.mechDrain *= 1 - 0.045 * power; },
+  },
+  {
+    id: "engineer-vitality",
+    name: "稳态生命线",
+    icon: "恒",
+    category: "生存 · 通用",
+    description: (power) => `最大生命提高 ${Math.round(8 * power)}，冷却回转提高 ${pct(0.045 * power)}%，并立即恢复生命。`,
+    apply: (p, power) => { const hp = Math.round(8 * power); p.maxHp += hp; p.hp = Math.min(p.maxHp, p.hp + hp); p.cooldownMod *= 1 + 0.045 * power; },
+  },
+];
+
 class Game {
   constructor() {
     this.sound = new Soundscape();
+    this.selectedCharacter = "xingyao";
+    try {
+      const savedCharacter = localStorage.getItem("boundary-ashes-character");
+      if (CHARACTER_PROFILES[savedCharacter]) this.selectedCharacter = savedCharacter;
+    } catch (error) {
+      // Character choice remains available when local storage is restricted.
+    }
     this.state = "title";
     this.mode = "run";
     this.tutorial = null;
@@ -2155,7 +2944,34 @@ class Game {
     this.buildBestiaryUI();
     this.syncSoundSettingsUI();
     this.bindEvents();
+    this.selectCharacter(this.selectedCharacter, false);
     requestAnimationFrame(this.loop);
+  }
+
+  createPlayer() {
+    return this.selectedCharacter === "wenyu" ? new EngineerPlayer(this) : new Player(this);
+  }
+
+  selectCharacter(characterId, announce = true) {
+    if (!CHARACTER_PROFILES[characterId]) return;
+    this.selectedCharacter = characterId;
+    const profile = CHARACTER_PROFILES[characterId];
+    document.body.classList.toggle("character-wenyu", characterId === "wenyu");
+    characterButtons.forEach((button) => {
+      const selected = button.dataset.character === characterId;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    characterSubtitle.textContent = profile.subtitle;
+    characterIntro.innerHTML = profile.intro;
+    controlGrid.innerHTML = profile.controls.map(([key, label]) => `<span><kbd>${key}</kbd> ${label}</span>`).join("");
+    if (portraitVideo) {
+      portraitVideo.setAttribute("aria-hidden", characterId === "wenyu" ? "true" : "false");
+      syncPortraitMotion();
+    }
+    if (engineerHero) engineerHero.setAttribute("aria-hidden", characterId === "wenyu" ? "false" : "true");
+    try { localStorage.setItem("boundary-ashes-character", characterId); } catch (error) {}
+    if (announce) this.sound.tone(characterId === "wenyu" ? 285 : 410, 0.2, "triangle", 0.07, 120);
   }
 
   reset(mode = "run") {
@@ -2170,7 +2986,7 @@ class Game {
       this.currentFloor = 1;
       this.buildDungeon(this.currentFloor);
     }
-    this.player = new Player(this);
+    this.player = this.createPlayer();
     this.enemies = [];
     this.arrows = [];
     this.enemyProjectiles = [];
@@ -2198,8 +3014,10 @@ class Game {
       spiritToggles: 0,
       rollUses: 0,
       danceUses: 0,
+      bindings: 0,
+      manufactures: 0,
       floors: 0,
-      hitsByKind: { normal: 0, light: 0, meteor: 0, breeze: 0, force: 0, tether: 0 },
+      hitsByKind: { normal: 0, light: 0, meteor: 0, breeze: 0, force: 0, tether: 0, tech: 0, robot: 0 },
       upgrades: [],
     };
     const start = this.rooms.get("0,0");
@@ -2231,7 +3049,7 @@ class Game {
     this.setScreen(settingsScreen, false);
     this.setScreen(bestiaryScreen, false);
     this.setScreen(bossIntroScreen, false);
-    this.showToast("新手关卡 · 星弦演武庭");
+    this.showToast(this.selectedCharacter === "wenyu" ? "新手关卡 · 归恒校准庭" : "新手关卡 · 星弦演武庭");
   }
 
   buildTutorialRoom() {
@@ -2312,6 +3130,7 @@ class Game {
       else if (fromDirection === "up") { this.player.x = W / 2; this.player.y = ARENA.bottom - 50; }
       else if (fromDirection === "down") { this.player.x = W / 2; this.player.y = ARENA.top + 50; }
       else { this.player.x = W / 2; this.player.y = H / 2; }
+      this.player.onRoomEnter?.();
     }
     this.transition = 0.42;
     if (!room.started && room.type !== "start") {
@@ -2319,7 +3138,7 @@ class Game {
       this.spawnRoom(room);
     }
     if (room.type === "tutorial") {
-      this.showToast("星弦演武庭");
+      this.showToast(this.player.characterId === "wenyu" ? "归恒校准庭" : "星弦演武庭");
     } else {
       const baseLabel = this.floorConfig.labels[room.type];
       const depthLabel = room.type === "combat" ? ` · 界深 ${room.depth}` : "";
@@ -2459,7 +3278,7 @@ class Game {
         angle: targetAngle + i * spread,
         width: 82,
         delay: delay + i * 0.08,
-        damage: boss.damage * 1.05,
+        damage: boss.outgoingDamage() * 1.05,
         color: "#de5c9b",
       }));
     }
@@ -2476,7 +3295,7 @@ class Game {
         y: clamp(base.y + Math.sin(angle) * offset, ARENA.top + 90, ARENA.bottom - 90),
         radius: i === 0 ? 94 : 78,
         delay: delay + i * 0.12,
-        damage: boss.damage * 0.92,
+        damage: boss.outgoingDamage() * 0.92,
         color: "#c459aa",
       }));
     }
@@ -2490,7 +3309,7 @@ class Game {
       radius: safeRadius,
       delay,
       duration: 0.36,
-      damage: boss.damage * 1.15,
+      damage: boss.outgoingDamage() * 1.15,
       color: "#cf4d90",
     }));
   }
@@ -2501,10 +3320,10 @@ class Game {
     for (let i = 0; i < count; i += 1) {
       if (i % 7 === 0) continue;
       const angle = offset + (i / count) * TAU;
-      this.enemyProjectiles.push(new EnemyProjectile(boss.x, boss.y, angle, speed, boss.damage * 0.58, i % 2 ? "#a96fdd" : "#df5b9a", 7));
+      this.enemyProjectiles.push(new EnemyProjectile(boss.x, boss.y, angle, speed, boss.outgoingDamage() * 0.58, i % 2 ? "#a96fdd" : "#df5b9a", 7));
     }
     for (let i = 0; i < 5; i += 1) {
-      this.enemyProjectiles.push(new EnemyProjectile(boss.x, boss.y, Math.atan2(this.player.y - boss.y, this.player.x - boss.x) + (i - 2) * 0.12, speed + 70, boss.damage * 0.55, "#ec6b9a", 6));
+      this.enemyProjectiles.push(new EnemyProjectile(boss.x, boss.y, Math.atan2(this.player.y - boss.y, this.player.x - boss.x) + (i - 2) * 0.12, speed + 70, boss.outgoingDamage() * 0.55, "#ec6b9a", 6));
     }
     this.shockwave(boss.x, boss.y, "#bd78de", 94);
   }
@@ -2611,13 +3430,14 @@ class Game {
         else this.togglePause();
       }
       if (this.state === "choice" && ["Digit1", "Digit2", "Digit3"].includes(event.code)) this.chooseUpgrade(Number(event.code.slice(-1)) - 1);
-      if (event.code === "Enter" && this.mode === "tutorial" && this.tutorial?.active && TUTORIAL_STEPS[this.tutorial.index].manual) this.handleTutorialNext();
+      if (event.code === "Enter" && this.mode === "tutorial" && this.tutorial?.active && this.getTutorialSteps()[this.tutorial.index].manual) this.handleTutorialNext();
     });
     window.addEventListener("keyup", (event) => input.keys.delete(event.code));
     canvas.addEventListener("pointermove", (event) => this.updatePointer(event));
     canvas.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || this.state !== "playing") return;
       this.updatePointer(event);
+      if (this.player?.handlePointerDown?.()) return;
       input.mouse.down = true;
       this.sound.enable();
     });
@@ -2627,6 +3447,7 @@ class Game {
       input.mouse.down = false;
     });
     document.getElementById("start-button").addEventListener("click", () => this.start());
+    characterButtons.forEach((button) => button.addEventListener("click", () => this.selectCharacter(button.dataset.character)));
     document.getElementById("tutorial-button").addEventListener("click", () => this.startTutorial());
     document.getElementById("bestiary-button").addEventListener("click", () => this.openBestiary());
     document.getElementById("pause-bestiary-button").addEventListener("click", () => this.openBestiary());
@@ -3040,13 +3861,14 @@ class Game {
 
   offerUpgrade() {
     const choices = [];
-    const unlockPool = SKILL_UNLOCKS.filter((upgrade) => upgrade.available(this.player));
+    const unlockPool = this.player.characterId === "wenyu" ? [] : SKILL_UNLOCKS.filter((upgrade) => upgrade.available(this.player));
     if (unlockPool.length > 0) {
       const unlock = unlockPool[Math.floor(this.rng() * unlockPool.length)];
       choices.push(this.materializeSkillUnlock(unlock));
     }
 
-    const pool = UPGRADES.filter((upgrade) => !upgrade.available || upgrade.available(this.player));
+    const upgradeSource = this.player.characterId === "wenyu" ? ENGINEER_UPGRADES : UPGRADES;
+    const pool = upgradeSource.filter((upgrade) => !upgrade.available || upgrade.available(this.player));
     while (choices.length < 3 && pool.length > 0) {
       const index = Math.floor(this.rng() * pool.length);
       const [upgrade] = pool.splice(index, 1);
@@ -3130,8 +3952,10 @@ class Game {
     this.state = "ended";
     input.mouse.down = false;
     document.getElementById("end-eyebrow").textContent = "JOURNEY ENDED";
-    document.getElementById("end-title").textContent = "星图黯淡";
-    document.getElementById("end-copy").textContent = "界弦沉寂，但深界会再次重构。下一支箭仍有机会抵达终点。";
+    document.getElementById("end-title").textContent = this.player.characterId === "wenyu" ? "网络离线" : "星图黯淡";
+    document.getElementById("end-copy").textContent = this.player.characterId === "wenyu"
+      ? "归恒链路暂时中断，但制造协议仍保存在下一次重构中。重新排列配置，网络就会再次上线。"
+      : "界弦沉寂，但深界会再次重构。下一支箭仍有机会抵达终点。";
     this.populateStats();
     this.setScreen(endScreen, true);
   }
@@ -3142,7 +3966,9 @@ class Game {
     input.mouse.down = false;
     document.getElementById("end-eyebrow").textContent = "BOUNDARY RESTORED";
     document.getElementById("end-title").textContent = "星路重明";
-    document.getElementById("end-copy").textContent = "三重界层重新接合，厄衡归于寂静。黎星遥以界弦标定了贯穿沉落遗迹、逆星回廊与失序深庭的归途。";
+    document.getElementById("end-copy").textContent = this.player.characterId === "wenyu"
+      ? "三重界层重新接合，厄衡归于寂静。程闻屿以归恒网络重建了贯穿沉落遗迹、逆星回廊与失序深庭的稳定航路。"
+      : "三重界层重新接合，厄衡归于寂静。黎星遥以界弦标定了贯穿沉落遗迹、逆星回廊与失序深庭的归途。";
     this.populateStats();
     this.setScreen(endScreen, true);
     this.sound.chime();
@@ -3246,16 +4072,26 @@ class Game {
   }
 
   setupTutorial() {
-    // The tutorial is a controlled showcase: unlock the full kit here while
-    // formal runs still begin with only basic attacks and the spirit skill.
-    this.player.magicUnlocked = true;
-    this.player.rollUnlocked = true;
-    this.player.danceUnlocked = true;
-    this.player.magicIndex = 0;
-    this.player.spiritActive = true;
-    this.player.qCooldown = 0;
-    this.player.danceCooldown = 0;
-    this.player.rollCharges = 2;
+    // Each character gets a controlled full-kit showcase. Formal runs retain
+    // their own unlock rules and lower starting resources.
+    if (this.player.characterId === "wenyu") {
+      this.player.configIndex = 0;
+      this.player.bindingMode = false;
+      this.player.robots = [];
+      this.player.energy = 56;
+      this.player.qCooldown = 0;
+      this.player.danceCooldown = 0;
+      this.player.rollCharges = 3;
+    } else {
+      this.player.magicUnlocked = true;
+      this.player.rollUnlocked = true;
+      this.player.danceUnlocked = true;
+      this.player.magicIndex = 0;
+      this.player.spiritActive = true;
+      this.player.qCooldown = 0;
+      this.player.danceCooldown = 0;
+      this.player.rollCharges = 2;
+    }
     this.tutorial = {
       active: true,
       index: 0,
@@ -3265,6 +4101,10 @@ class Game {
     this.setTutorialStep(0);
     tutorialDialog.classList.add("visible");
     tutorialDialog.setAttribute("aria-hidden", "false");
+  }
+
+  getTutorialSteps() {
+    return this.player?.characterId === "wenyu" ? WENYU_TUTORIAL_STEPS : XINGYAO_TUTORIAL_STEPS;
   }
 
   hideTutorial() {
@@ -3278,21 +4118,27 @@ class Game {
       moveDistance: this.stats.moveDistance,
       spiritToggles: this.stats.spiritToggles,
       rollVolleys: this.stats.rollVolleys,
+      rollUses: this.stats.rollUses,
       danceUses: this.stats.danceUses,
+      switches: this.stats.switches,
+      bindings: this.stats.bindings,
+      manufactures: this.stats.manufactures,
+      manufacturedCount: this.player.manufacturedCount || 0,
       hitsByKind: { ...this.stats.hitsByKind },
     };
   }
 
   setTutorialStep(index) {
-    if (!this.tutorial || index < 0 || index >= TUTORIAL_STEPS.length) return;
+    const steps = this.getTutorialSteps();
+    if (!this.tutorial || index < 0 || index >= steps.length) return;
     this.tutorial.index = index;
     this.tutorial.pending = 0;
     this.tutorial.baseline = this.captureTutorialBaseline();
-    const step = TUTORIAL_STEPS[index];
+    const step = steps[index];
 
     this.arrows = [];
     this.enemyProjectiles = [];
-    if (["normal", "light", "breeze"].includes(step.id)) this.spawnTutorialTargets(1);
+    if (["normal", "light", "breeze", "engineer_attack", "engineer_robot_attack"].includes(step.id)) this.spawnTutorialTargets(1);
     else if (step.id === "meteor" || step.id === "roll" || step.id === "dance") this.spawnTutorialTargets(3);
     else this.enemies = [];
 
@@ -3323,6 +4169,30 @@ class Game {
     } else if (step.id === "dance") {
       this.player.energy = this.player.maxEnergy;
       this.player.danceCooldown = 0;
+    } else if (step.id === "engineer_attack") {
+      this.player.attackCooldown = 0;
+    } else if (step.id === "engineer_config") {
+      this.player.qCooldown = 0;
+    } else if (step.id === "engineer_manufacture") {
+      this.player.bindingMode = false;
+      this.player.energy = Math.max(this.player.energy, this.player.maxEnergy - 9);
+    } else if (step.id === "engineer_robot_attack") {
+      if (this.player.robots.length === 0) this.player.manufactureRobot();
+      this.player.robots.forEach((robot) => { robot.attackTimer = 0.22; });
+    } else if (step.id === "engineer_bind") {
+      if (this.player.robots.length === 0) this.player.manufactureRobot();
+      this.player.bindingMode = false;
+      this.player.robots[0].bound = false;
+    } else if (step.id === "engineer_reset") {
+      this.player.bindingMode = false;
+      this.player.qCooldown = 0;
+      this.player.rollCharges = 3;
+      this.player.rollRecharge = 0;
+    } else if (step.id === "engineer_mech") {
+      if (this.player.robots.length === 0) this.player.manufactureRobot();
+      this.player.bindingMode = false;
+      this.player.energy = Math.max(this.player.energy, 70);
+      this.player.danceCooldown = 0;
     }
 
     this.renderTutorialDialog();
@@ -3343,12 +4213,13 @@ class Game {
 
   renderTutorialDialog() {
     if (!this.tutorial?.active) return;
-    const step = TUTORIAL_STEPS[this.tutorial.index];
+    const steps = this.getTutorialSteps();
+    const step = steps[this.tutorial.index];
     tutorialTitle.textContent = step.title;
     tutorialText.textContent = step.text;
     tutorialKey.textContent = step.key;
-    tutorialStepLabel.textContent = `界律引导 · ${String(this.tutorial.index + 1).padStart(2, "0")}/${TUTORIAL_STEPS.length}`;
-    tutorialProgress.innerHTML = TUTORIAL_STEPS.map((_, index) => {
+    tutorialStepLabel.textContent = `${this.player.characterId === "wenyu" ? "归恒引导" : "界律引导"} · ${String(this.tutorial.index + 1).padStart(2, "0")}/${steps.length}`;
+    tutorialProgress.innerHTML = steps.map((_, index) => {
       const state = index < this.tutorial.index ? "done" : index === this.tutorial.index ? "current" : "";
       return `<i class="${state}"></i>`;
     }).join("");
@@ -3360,7 +4231,7 @@ class Game {
 
   handleTutorialNext() {
     if (this.mode !== "tutorial" || !this.tutorial?.active) return;
-    const step = TUTORIAL_STEPS[this.tutorial.index];
+    const step = this.getTutorialSteps()[this.tutorial.index];
     if (!step.manual) return;
     if (step.final) this.start();
     else this.setTutorialStep(this.tutorial.index + 1);
@@ -3374,7 +4245,7 @@ class Game {
       return;
     }
 
-    const step = TUTORIAL_STEPS[this.tutorial.index];
+    const step = this.getTutorialSteps()[this.tutorial.index];
     if (step.manual) return;
     const baseline = this.tutorial.baseline;
     let complete = false;
@@ -3385,6 +4256,14 @@ class Game {
     else if (step.id === "summon") complete = this.player.spiritActive && this.stats.spiritToggles > baseline.spiritToggles;
     else if (step.id === "roll") complete = this.stats.rollVolleys > baseline.rollVolleys;
     else if (step.id === "dance") complete = this.stats.danceUses > baseline.danceUses;
+    else if (step.id === "engineer_move") complete = this.stats.moveDistance - baseline.moveDistance >= 105;
+    else if (step.id === "engineer_attack") complete = this.stats.hitsByKind.tech > baseline.hitsByKind.tech;
+    else if (step.id === "engineer_config") complete = this.stats.switches > baseline.switches;
+    else if (step.id === "engineer_manufacture") complete = this.player.manufacturedCount > baseline.manufacturedCount;
+    else if (step.id === "engineer_robot_attack") complete = this.stats.hitsByKind.robot > baseline.hitsByKind.robot;
+    else if (step.id === "engineer_bind") complete = this.stats.bindings > baseline.bindings && this.player.robots.some((robot) => robot.bound);
+    else if (step.id === "engineer_reset") complete = this.stats.switches > baseline.switches && this.stats.rollUses > baseline.rollUses;
+    else if (step.id === "engineer_mech") complete = this.stats.danceUses > baseline.danceUses;
 
     if (complete) {
       this.tutorial.pending = 0.52;
@@ -3423,6 +4302,7 @@ class Game {
     for (const pickup of this.pickups) pickup.draw(ctx);
     for (const projectile of this.enemyProjectiles) projectile.draw(ctx);
     for (const arrow of this.arrows) arrow.draw(ctx);
+    this.player.drawCompanions?.(ctx);
     for (const enemy of this.enemies) enemy.draw(ctx, this);
     for (const effect of this.effects) effect.draw(ctx);
     this.player.draw(ctx);
@@ -3696,6 +4576,7 @@ class Game {
   drawPlayerStatus() {
     const x = 42;
     const y = 36;
+    const engineer = this.player.characterId === "wenyu";
     ctx.save();
     ctx.fillStyle = "rgba(5,10,17,0.76)";
     roundedRectPath(ctx, x, y, 414, 112, 4);
@@ -3706,11 +4587,36 @@ class Game {
     roundedRectPath(ctx, x + 12, y + 12, 64, 78, 3);
     ctx.save();
     ctx.clip();
-    const animatedPortraitReady = portraitVideo && portraitVideo.readyState >= 2 && portraitVideo.videoWidth > 0;
+    const animatedPortraitReady = !engineer && portraitVideo && portraitVideo.readyState >= 2 && portraitVideo.videoWidth > 0;
     const portraitSource = animatedPortraitReady ? portraitVideo : portraitImage;
     const portraitWidth = animatedPortraitReady ? portraitVideo.videoWidth : portraitImage.naturalWidth;
     const portraitHeight = animatedPortraitReady ? portraitVideo.videoHeight : portraitImage.naturalHeight;
-    if (portraitWidth > 0 && portraitHeight > 0) {
+    if (engineer) {
+      const gradient = ctx.createLinearGradient(x + 12, y + 12, x + 76, y + 90);
+      gradient.addColorStop(0, "#1d3f45");
+      gradient.addColorStop(1, "#09131b");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x + 12, y + 12, 64, 78);
+      ctx.save();
+      ctx.translate(x + 44, y + 49);
+      ctx.fillStyle = "#17272e";
+      polygon(ctx, [[-21, 32], [-17, 1], [-9, -9], [12, -8], [20, 3], [21, 32]]);
+      ctx.fill();
+      ctx.fillStyle = "#d0b6a2";
+      ctx.beginPath();
+      ctx.arc(2, -14, 11, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#101922";
+      ctx.beginPath();
+      ctx.arc(-2, -16, 12, Math.PI * 0.5, Math.PI * 1.55);
+      ctx.fill();
+      ctx.strokeStyle = this.player.currentMagic.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 8, 17, 0.2, 2.8);
+      ctx.stroke();
+      ctx.restore();
+    } else if (portraitWidth > 0 && portraitHeight > 0) {
       ctx.drawImage(
         portraitSource,
         portraitWidth * 0.333,
@@ -3727,24 +4633,27 @@ class Game {
       ctx.fillRect(x + 12, y + 12, 64, 78);
     }
     ctx.restore();
-    ctx.strokeStyle = "rgba(116,224,193,0.42)";
+    ctx.strokeStyle = engineer ? "rgba(99,216,208,0.52)" : "rgba(116,224,193,0.42)";
     roundedRectPath(ctx, x + 12, y + 12, 64, 78, 3);
     ctx.stroke();
 
     ctx.fillStyle = COLORS.text;
     ctx.font = "500 17px 'STKaiti','KaiTi',serif";
-    ctx.fillText("黎星遥", x + 92, y + 27);
+    ctx.fillText(engineer ? "程闻屿" : "黎星遥", x + 92, y + 27);
     ctx.fillStyle = COLORS.muted;
     ctx.font = "10px system-ui";
     ctx.letterSpacing = "2px";
-    ctx.fillText(this.player.spiritActive ? "精灵射手 · 契灵在场" : "精灵射手 · 归弦专精", x + 162, y + 26);
+    const roleText = engineer
+      ? (this.player.dancing ? "归恒机巧师 · 机甲展开" : `归恒机巧师 · ${this.player.robots.length} 机在线`)
+      : (this.player.spiritActive ? "精灵射手 · 契灵在场" : "精灵射手 · 归弦专精");
+    ctx.fillText(roleText, x + 162, y + 26);
     this.drawBar(x + 92, y + 43, 294, 13, this.player.hp / this.player.maxHp, "#dc6773", "rgba(88,34,43,0.55)");
     this.drawBar(x + 92, y + 67, 294, 9, this.player.energy / this.player.maxEnergy, this.player.currentMagic.color, "rgba(34,68,70,0.48)");
     ctx.fillStyle = "#ebc6c9";
     ctx.font = "600 10px system-ui";
     ctx.fillText(`${Math.ceil(this.player.hp)} / ${Math.ceil(this.player.maxHp)}`, x + 96, y + 54);
     ctx.fillStyle = "#bddbd7";
-    ctx.fillText(`${Math.ceil(this.player.energy)} / ${Math.ceil(this.player.maxEnergy)}`, x + 96, y + 76);
+    ctx.fillText(`${engineer ? "制造 " : ""}${Math.ceil(this.player.energy)} / ${Math.ceil(this.player.maxEnergy)}`, x + 96, y + 76);
     ctx.fillStyle = COLORS.muted;
     ctx.font = "10px system-ui";
     ctx.fillText(`攻速 ${(this.player.effectiveAttackSpeed() / this.player.baseAttackInterval).toFixed(2)}/秒`, x + 92, y + 98);
@@ -3768,7 +4677,13 @@ class Game {
   drawSkills() {
     const baseX = W / 2 - 210;
     const y = this.mode === "tutorial" ? H - 340 : H - 92;
-    const slots = [
+    const engineer = this.player.characterId === "wenyu";
+    const slots = engineer ? [
+      { key: "Q", label: this.player.currentMagic.name, color: this.player.currentMagic.color, cooldown: this.player.qCooldown, max: this.player.qCooldownMax, locked: false },
+      { key: "E", label: this.player.bindingMode ? "绑定指定中" : "批量绑定", color: "#7bd9d1", cooldown: 0, max: 1, locked: false },
+      { key: "␣", label: "重设并修复", color: "#b692ff", cooldown: this.player.rollCharges > 0 ? 0 : this.player.rollRechargeTime - this.player.rollRecharge, max: this.player.rollRechargeTime, locked: false },
+      { key: "R", label: this.player.dancing ? "机甲展开" : "回收变身", color: "#e4b968", cooldown: this.player.danceCooldown, max: this.player.danceCooldownMax, locked: false },
+    ] : [
       { key: "Q", label: this.player.spiritActive ? "回收契灵" : "召唤契灵", color: COLORS.jade, cooldown: this.player.qCooldown, max: this.player.qCooldownMax, locked: false },
       { key: "E", label: this.player.magicUnlocked ? this.player.currentMagic.name : "尚未解锁", color: this.player.currentMagic.color, cooldown: 0, max: 1, locked: !this.player.magicUnlocked },
       { key: "␣", label: this.player.rollUnlocked ? "翻滚齐射" : "尚未解锁", color: COLORS.force, cooldown: this.player.rollCharges > 0 ? 0 : this.player.rollRechargeTime - this.player.rollRecharge, max: this.player.rollRechargeTime, locked: !this.player.rollUnlocked },
@@ -3814,8 +4729,8 @@ class Game {
           ctx.fillRect(x + 72 + c * 8, y + 8, 5, 5);
         }
       }
-      if (index === 1 && !slot.locked) {
-        const next = MAGIC[(this.player.magicIndex + 1) % MAGIC.length];
+      if (index === (engineer ? 0 : 1) && !slot.locked) {
+        const next = engineer ? ROBOT_CONFIGS[(this.player.configIndex + 1) % ROBOT_CONFIGS.length] : MAGIC[(this.player.magicIndex + 1) % MAGIC.length];
         ctx.fillStyle = next.color;
         ctx.globalAlpha = 0.48;
         ctx.fillRect(x + 79, y + 9, 4, 19);
@@ -3927,7 +4842,7 @@ class Game {
     ctx.fillStyle = "rgba(205,221,219,0.55)";
     ctx.font = "10px system-ui";
     if (this.mode === "tutorial" && this.tutorial?.active) {
-      ctx.fillText(`新手关卡 · ${TUTORIAL_STEPS[this.tutorial.index].title}`, W / 2, 34);
+      ctx.fillText(`新手关卡 · ${this.getTutorialSteps()[this.tutorial.index].title}`, W / 2, 34);
     } else {
       const objective = this.currentRoom.cleared ? "房间已稳定 · 寻找发光界门" : `残余威胁 ${this.enemies.length}`;
       ctx.fillText(`第 ${this.currentFloor} 层 · ${this.floorConfig.name} · ${objective}`, W / 2, 34);
@@ -3964,7 +4879,7 @@ class Game {
 
   drawTutorialGuide() {
     if (this.mode !== "tutorial" || !this.tutorial?.active) return;
-    const step = TUTORIAL_STEPS[this.tutorial.index];
+    const step = this.getTutorialSteps()[this.tutorial.index];
     if (!step.focus) return;
     const pulse = 0.5 + Math.sin(this.elapsed * 5) * 0.5;
     ctx.save();
@@ -3979,7 +4894,7 @@ class Game {
       ctx.beginPath();
       ctx.arc(this.player.x, this.player.y, 48 + pulse * 7, 0, TAU);
       ctx.stroke();
-    } else if (step.focus === "target" || step.focus === "magic") {
+    } else if (["target", "magic", "robot_target"].includes(step.focus)) {
       const target = this.enemies.find((enemy) => enemy.type === "dummy");
       if (target) {
         ctx.beginPath();
@@ -3994,7 +4909,16 @@ class Game {
       }
     }
 
-    const skillIndex = { q: 0, magic: 1, space: 2, r: 3 }[step.focus];
+    if (["robot", "robot_target", "binding"].includes(step.focus)) {
+      const robot = this.player.robots?.[0];
+      if (robot) {
+        ctx.beginPath();
+        ctx.arc(robot.x, robot.y, robot.r + 24 + pulse * 5, 0, TAU);
+        ctx.stroke();
+      }
+    }
+
+    const skillIndex = { q: 0, magic: 1, binding: 1, space: 2, r: 3 }[step.focus];
     if (skillIndex !== undefined) {
       const x = W / 2 - 210 + skillIndex * 112;
       const y = H - 340;
@@ -4079,3 +5003,34 @@ class Game {
 }
 
 const game = new Game();
+if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+  window.__boundaryAshesDebug = game;
+  const debugProbe = document.createElement("output");
+  debugProbe.id = "debug-game-state";
+  debugProbe.hidden = true;
+  document.body.appendChild(debugProbe);
+  window.setInterval(() => {
+    const player = game.player;
+    debugProbe.dataset.state = game.state;
+    debugProbe.dataset.character = player?.characterId || game.selectedCharacter;
+    debugProbe.dataset.playerClass = player?.constructor?.name || "";
+    debugProbe.dataset.hp = String(player?.hp ?? "");
+    debugProbe.dataset.energy = String(player?.energy ?? "");
+    debugProbe.dataset.robots = String(player?.robots?.length ?? 0);
+    debugProbe.dataset.config = player?.currentMagic?.name || "";
+    debugProbe.dataset.binding = String(Boolean(player?.bindingMode));
+    debugProbe.dataset.resetCharges = String(player?.rollCharges ?? 0);
+    debugProbe.dataset.mech = String(Boolean(player?.dancing));
+    debugProbe.dataset.shots = String(game.stats?.shots ?? 0);
+    debugProbe.dataset.moveDistance = String(game.stats?.moveDistance ?? 0);
+    debugProbe.dataset.playerX = String(player?.x ?? "");
+    debugProbe.dataset.playerY = String(player?.y ?? "");
+    debugProbe.dataset.tutorial = game.tutorial?.active ? game.getTutorialSteps()[game.tutorial.index]?.id || "" : "";
+    debugProbe.dataset.robotHits = String(game.stats?.hitsByKind?.robot ?? 0);
+    debugProbe.dataset.bindings = String(game.stats?.bindings ?? 0);
+    debugProbe.dataset.manufactures = String(game.stats?.manufactures ?? 0);
+    debugProbe.dataset.firstRobotX = String(player?.robots?.[0]?.x ?? "");
+    debugProbe.dataset.firstRobotY = String(player?.robots?.[0]?.y ?? "");
+    debugProbe.dataset.firstRobotBound = String(Boolean(player?.robots?.[0]?.bound));
+  }, 80);
+}

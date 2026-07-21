@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#090e1a" />
-    <title>界标余烬 · 黎星遥</title>
+    <title>界标余烬 · 归恒与界标</title>
     <link rel="preload" as="image" href="./assets/li-xingyao-animation-v5/keyframe-01.png" />
     <link rel="preload" as="video" href="./assets/li-xingyao-portrait-v5-loop-locked.mp4" type="video/mp4" />
     <link rel="preload" as="image" href="./assets/boss-eheng-portrait.png" />
@@ -12,7 +12,7 @@
   </head>
   <body>
     <main id="game-shell" aria-label="界标余烬游戏区域">
-      <canvas id="game" width="1600" height="900"></canvas>
+      <canvas id="game" width="1600" height="900" tabindex="0" aria-label="界标余烬战斗画布"></canvas>
 
       <section id="title-screen" class="panel-screen visible">
         <video
@@ -29,18 +29,34 @@
         >
           <source src="./assets/li-xingyao-portrait-v5-loop-locked.mp4" type="video/mp4" />
         </video>
+        <div id="engineer-hero" class="engineer-hero" aria-label="归恒机巧支援程闻屿" aria-hidden="true">
+          <div class="engineer-frame"><i></i><i></i><b></b></div>
+          <div class="engineer-silhouette"><span></span></div>
+          <div class="hero-drone drone-heal">疗</div>
+          <div class="hero-drone drone-energy">能</div>
+          <div class="hero-drone drone-control">控</div>
+          <div class="hero-drone drone-enhance">强</div>
+        </div>
         <div class="title-content">
           <div class="title-mark" aria-hidden="true">
             <i></i><i></i><i></i>
           </div>
           <p class="eyebrow">BOUNDARY ASHES</p>
           <h1>界标余烬</h1>
-          <p class="subtitle">黎星遥 · 精灵界标射手</p>
-          <p class="intro-copy">
+          <div class="character-picker" aria-label="选择角色">
+            <button class="character-card selected" data-character="xingyao" type="button">
+              <span>01</span><strong>黎星遥</strong><small>精灵界标射手 · 输出 / 控制</small>
+            </button>
+            <button class="character-card" data-character="wenyu" type="button">
+              <span>02</span><strong>程闻屿</strong><small>归恒机巧师 · 持续支援</small>
+            </button>
+          </div>
+          <p id="character-subtitle" class="subtitle">黎星遥 · 精灵界标射手</p>
+          <p id="character-intro" class="intro-copy">
             深界正在吞没最后的星图。收集星痕、解放失落界律，<br />
             在不断重构的遗迹中重新掌握魔法箭与灵舞。
           </p>
-          <div class="control-grid" aria-label="操作说明">
+          <div id="control-grid" class="control-grid" aria-label="操作说明">
             <span><kbd>WASD</kbd> 移动</span>
             <span><kbd>鼠标</kbd> 瞄准</span>
             <span><kbd>按住左键</kbd> 蓄力射击</span>
@@ -74,7 +90,7 @@
         <div class="settings-shell">
           <header class="settings-header">
             <div>
-              <p class="eyebrow">STARSTRING TUNING</p>
+              <p class="eyebrow">COMBAT TUNING</p>
               <h2>设置</h2>
             </div>
             <button id="settings-close" class="settings-close" aria-label="关闭设置">关闭 ×</button>
@@ -85,8 +101,8 @@
             </div>
             <div class="settings-copy">
               <p class="settings-kicker">声音 · SOUND</p>
-              <h3>调整星弦回响</h3>
-              <p>控制全部弓弦、魔法箭、命中反馈与界律提示音。设置会自动保存。</p>
+              <h3>调整战斗回响</h3>
+              <p>控制全部武器、技能、命中反馈与界律提示音。设置会自动保存。</p>
             </div>
             <div class="volume-control">
               <label for="volume-slider">
@@ -98,7 +114,7 @@
             </div>
             <div class="settings-actions">
               <button id="mute-button" class="sound-toggle" type="button" aria-pressed="false">静音 · 关闭</button>
-              <button id="sound-preview-button" class="primary-button sound-preview" type="button">试听弓弦</button>
+              <button id="sound-preview-button" class="primary-button sound-preview" type="button">试听战斗音效</button>
             </div>
           </div>
         </div>
@@ -213,6 +229,6 @@
       <div id="rotate-hint">请将设备横置以获得完整视野</div>
     </main>
     <script src="./src/dungeon-generator.js" defer></script>
-    <script src="./src/game.js" defer></script>
+    <script src="./src/game.js?v=20260721-wenyu" defer></script>
   </body>
 </html>

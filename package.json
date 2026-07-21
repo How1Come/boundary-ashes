@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A code-drawn 2D roguelike featuring Li Xingyao, the Boundary Archer.",
+  "description": "A code-drawn 2D roguelike featuring Li Xingyao and Cheng Wenyu.",
   "scripts": {
     "start": "python3 -m http.server 5173",
     "build": "node scripts/build.mjs",

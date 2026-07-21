@@ -104,6 +104,159 @@ body::before {
   mask-image: linear-gradient(to right, transparent 0%, #000 17%, #000 88%, transparent 100%);
 }
 
+.engineer-hero {
+  --engineer-accent: #63d8d0;
+  position: absolute;
+  z-index: 1;
+  right: 3vw;
+  bottom: -3vh;
+  width: min(52vw, 760px);
+  height: 103vh;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(30px);
+  transition: opacity 320ms ease, transform 420ms ease;
+  filter: drop-shadow(-18px 8px 40px rgba(43, 139, 143, 0.2));
+}
+
+body.character-wenyu .hero-portrait { opacity: 0; }
+body.character-wenyu .engineer-hero { opacity: 0.82; visibility: visible; transform: translateX(0); }
+
+.engineer-frame {
+  position: absolute;
+  left: 12%;
+  top: 8%;
+  width: 76%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(96, 213, 204, 0.2);
+  border-radius: 50%;
+  box-shadow: inset 0 0 80px rgba(54, 174, 168, 0.08), 0 0 70px rgba(40, 144, 146, 0.12);
+  animation: engineer-frame-turn 22s linear infinite;
+}
+
+.engineer-frame::before,
+.engineer-frame::after,
+.engineer-frame i,
+.engineer-frame b {
+  position: absolute;
+  inset: 12%;
+  content: "";
+  border: 1px solid rgba(205, 175, 99, 0.3);
+  transform: rotate(45deg);
+}
+
+.engineer-frame::after { inset: 25%; border-color: rgba(99, 216, 208, 0.42); }
+.engineer-frame i:nth-child(1) { inset: 7% 45%; transform: none; }
+.engineer-frame i:nth-child(2) { inset: 45% 7%; transform: none; }
+.engineer-frame b { inset: 39%; border-radius: 50%; background: rgba(99, 216, 208, 0.16); box-shadow: 0 0 30px var(--engineer-accent); }
+
+.engineer-silhouette {
+  position: absolute;
+  left: 31%;
+  top: 13%;
+  width: 38%;
+  height: 88%;
+  border-radius: 44% 44% 12% 12%;
+  background:
+    linear-gradient(77deg, transparent 17%, #0d1820 18% 29%, #22373d 30% 48%, #31535a 49% 61%, #101a22 62% 82%, transparent 83%);
+  clip-path: polygon(28% 0, 66% 0, 74% 13%, 66% 24%, 88% 45%, 74% 58%, 66% 100%, 51% 100%, 45% 62%, 36% 100%, 18% 100%, 28% 58%, 8% 45%, 28% 24%, 20% 12%);
+  box-shadow: inset 0 0 48px rgba(86, 220, 211, 0.14);
+}
+
+.engineer-silhouette::before {
+  position: absolute;
+  left: 12%;
+  top: 23%;
+  width: 76%;
+  height: 43%;
+  content: "";
+  clip-path: polygon(8% 5%, 53% 0, 94% 23%, 78% 48%, 88% 100%, 52% 81%, 12% 100%, 22% 48%);
+  background:
+    linear-gradient(126deg, transparent 0 41%, rgba(98, 216, 208, 0.76) 42% 43%, transparent 44% 100%),
+    linear-gradient(16deg, transparent 0 60%, rgba(218, 177, 87, 0.55) 61% 62%, transparent 63% 100%),
+    linear-gradient(112deg, rgba(7, 14, 20, 0.2), rgba(54, 91, 94, 0.72));
+  border: 1px solid rgba(114, 223, 213, 0.32);
+  box-shadow: inset 0 0 24px rgba(99, 216, 208, 0.1);
+  transform: rotate(-7deg);
+}
+
+.engineer-silhouette::after {
+  position: absolute;
+  left: 8%;
+  top: 18%;
+  width: 84%;
+  height: 51%;
+  content: "";
+  border: 5px solid rgba(37, 74, 80, 0.78);
+  border-top-color: rgba(180, 141, 76, 0.68);
+  border-bottom-color: transparent;
+  border-radius: 46% 46% 18% 18%;
+  clip-path: polygon(0 0, 31% 0, 41% 12%, 59% 12%, 69% 0, 100% 0, 86% 72%, 66% 58%, 50% 100%, 34% 58%, 14% 72%);
+  filter: drop-shadow(0 0 8px rgba(99, 216, 208, 0.3));
+}
+
+.engineer-silhouette > span {
+  position: absolute;
+  z-index: 3;
+  left: 36%;
+  top: 2.5%;
+  width: 30%;
+  height: 11%;
+  border-radius: 43% 48% 42% 46%;
+  background:
+    linear-gradient(92deg, transparent 0 53%, rgba(85, 220, 211, 0.28) 54% 57%, transparent 58%),
+    linear-gradient(145deg, #d1b19c 0 58%, #987d72 100%);
+  box-shadow: inset -8px -7px 14px rgba(42, 34, 38, 0.24), 0 0 0 4px #111b23;
+  transform: rotate(3deg);
+}
+
+.engineer-silhouette > span::before {
+  position: absolute;
+  left: -18%;
+  top: -23%;
+  width: 118%;
+  height: 69%;
+  content: "";
+  border-radius: 72% 38% 56% 32%;
+  background: linear-gradient(150deg, #090f17 10%, #172830 61%, #31515a 100%);
+  clip-path: polygon(0 15%, 57% 0, 100% 19%, 83% 68%, 65% 42%, 57% 100%, 42% 46%, 17% 82%);
+}
+
+.engineer-silhouette > span::after {
+  position: absolute;
+  left: 51%;
+  top: 47%;
+  width: 39%;
+  height: 3px;
+  content: "";
+  border-radius: 3px;
+  background: #7df2e8;
+  box-shadow: 0 0 7px #63d8d0, -16px 2px 0 -1px rgba(22, 30, 35, 0.9);
+}
+
+.hero-drone {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid currentColor;
+  border-radius: 16px 50%;
+  color: #72e0b3;
+  background: rgba(7, 15, 23, 0.82);
+  box-shadow: inset 0 0 20px currentColor, 0 0 26px color-mix(in srgb, currentColor 42%, transparent);
+  font: 500 15px "STKaiti", serif;
+  animation: hero-drone-float 3.4s ease-in-out infinite;
+}
+.drone-heal { left: 12%; top: 31%; }
+.drone-energy { right: 12%; top: 21%; color: #69b9ff; animation-delay: -0.8s; }
+.drone-control { right: 6%; top: 52%; color: #b692ff; animation-delay: -1.7s; }
+.drone-enhance { left: 13%; top: 61%; color: #e4b968; animation-delay: -2.4s; }
+
+@keyframes engineer-frame-turn { to { transform: rotate(360deg); } }
+@keyframes hero-drone-float { 50% { transform: translateY(-13px) rotate(6deg); } }
+
 @media (prefers-reduced-motion: reduce) {
   .hero-portrait {
     will-change: auto;
@@ -156,6 +309,36 @@ h2 {
   font-size: 23px;
   letter-spacing: 0.3em;
 }
+
+.character-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(210px, 1fr));
+  gap: 10px;
+  width: min(590px, 80vw);
+  margin-top: 12px;
+}
+
+.character-card {
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 9px;
+  padding: 11px 13px;
+  border: 1px solid rgba(129, 168, 174, 0.2);
+  color: #71878e;
+  background: rgba(7, 12, 20, 0.72);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.character-card > span { grid-row: 1 / 3; align-self: center; color: #50656c; font-size: 10px; letter-spacing: 0.18em; }
+.character-card strong { color: #b7c7c5; font: 500 17px "STKaiti", serif; letter-spacing: 0.12em; }
+.character-card small { color: #61767d; font-size: 9px; letter-spacing: 0.08em; }
+.character-card:hover { transform: translateY(-2px); border-color: rgba(116, 224, 193, 0.45); }
+.character-card.selected { border-color: rgba(116, 224, 193, 0.72); background: rgba(27, 66, 66, 0.55); box-shadow: 0 0 22px rgba(69, 190, 173, 0.12); }
+.character-card.selected strong { color: #e9f8f3; }
+body.character-wenyu .character-card.selected { border-color: rgba(99, 216, 208, 0.72); background: rgba(25, 57, 67, 0.62); }
 
 .intro-copy,
 .choice-hint {
