@@ -155,8 +155,8 @@ const CHARACTER_PROFILES = {
   },
   wenyu: {
     name: "程闻屿",
-    subtitle: "程闻屿 · 归恒机巧支援",
-    intro: "把战场拆解成可维护的网络。设定配置、制造机器人，<br />用持续补给、控制与机甲回收维持整支队伍。",
+    subtitle: "程闻屿 · 软系归恒机巧师",
+    intro: "柔软可爱的外表下，是一张精确运转的归恒网络。<br />设定配置、制造机器人，让四种机巧守住整片战场。",
     controls: [
       ["WASD", "移动"], ["鼠标", "瞄准 / 选择机器人"], ["按住左键", "脉冲射击"], ["Space", "重设并修复"],
       ["Q", "切换机器人配置"], ["E", "进入 / 退出绑定"], ["R", "回收并机甲变身"], ["Esc", "暂停"],
@@ -1610,6 +1610,54 @@ class RobotBolt extends Arrow {
     game.shockwave(enemy.x, enemy.y, this.config.color, enemy.r + 12);
     this.dead = true;
   }
+
+  draw(context) {
+    const color = this.config.color;
+    context.save();
+    context.translate(this.x, this.y);
+    context.rotate(this.angle);
+    context.shadowColor = color;
+    context.shadowBlur = 18;
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = 2.5;
+    context.globalAlpha = 0.3;
+    context.fillRect(-31, -3, 34, 6);
+    context.globalAlpha = 1;
+    if (this.config.key === "healing") {
+      for (let i = 0; i < 4; i += 1) {
+        context.rotate(Math.PI / 2);
+        context.beginPath();
+        context.ellipse(3, 0, 9, 3.5, 0, 0, TAU);
+        context.fill();
+      }
+      context.fillStyle = "#eafff8";
+      context.fillRect(-2, -6, 4, 12);
+      context.fillRect(-6, -2, 12, 4);
+    } else if (this.config.key === "energy") {
+      context.beginPath();
+      context.arc(0, 0, 8, 0, TAU);
+      context.stroke();
+      context.beginPath();
+      context.arc(0, 0, 3, 0, TAU);
+      context.fill();
+      context.moveTo(7, -5); context.lineTo(15, 0); context.lineTo(7, 5);
+      context.stroke();
+    } else if (this.config.key === "control") {
+      polygon(context, [[15, 0], [2, -7], [-4, 0], [2, 7]]);
+      context.fill();
+      context.globalAlpha = 0.65;
+      context.strokeRect(-17, -7, 11, 14);
+    } else {
+      polygon(context, [[16, 0], [2, -9], [6, -3], [-8, 0], [6, 3], [2, 9]]);
+      context.fill();
+      context.globalAlpha = 0.5;
+      context.beginPath();
+      context.arc(-5, 0, 11, -0.8, 0.8);
+      context.stroke();
+    }
+    context.restore();
+  }
 }
 
 class SupportRobot {
@@ -1620,7 +1668,7 @@ class SupportRobot {
     this.configIndex = configIndex;
     this.x = owner.x + Math.cos(index * 1.7) * 54;
     this.y = owner.y + Math.sin(index * 1.7) * 54;
-    this.r = 13;
+    this.r = 16;
     this.phase = rand(TAU);
     this.energy = 27;
     this.maxEnergy = 44;
@@ -1630,6 +1678,7 @@ class SupportRobot {
     this.bound = true;
     this.dead = false;
     this.hitFlash = 0;
+    this.attackFlash = 0;
     this.currentTarget = null;
   }
 
@@ -1641,6 +1690,7 @@ class SupportRobot {
     if (this.dead) return;
     this.phase += dt * (1.2 + index * 0.05);
     this.hitFlash = Math.max(0, this.hitFlash - dt * 5);
+    this.attackFlash = Math.max(0, this.attackFlash - dt * 7);
     this.energy = Math.min(this.maxEnergy, this.energy + dt * 1.15 * this.owner.robotEnergyMod);
     const spacing = Math.min(TAU / Math.max(1, total), 1.05);
     const angle = this.phase * 0.34 + index * spacing - Math.PI / 2;
@@ -1676,6 +1726,7 @@ class SupportRobot {
     if (target && this.attackTimer <= 0) {
       const base = this.config.key === "enhance" ? 8.4 : this.config.key === "control" ? 6.4 : 7.2;
       this.game.arrows.push(new RobotBolt(this, target, base * this.owner.effectiveDamage()));
+      this.attackFlash = 1;
       this.attackTimer = this.config.key === "energy" ? 1.25 : 1.52;
       this.game.sound.tone(330 + this.configIndex * 75, 0.08, "triangle", 0.035, 95, { pan: clamp((this.x - W / 2) / 700, -1, 1) });
     }
@@ -1711,36 +1762,171 @@ class SupportRobot {
 
   draw(context) {
     const config = this.config;
+    const pulse = 0.5 + Math.sin(this.phase * 4.5) * 0.5;
+    const aim = this.currentTarget
+      ? Math.atan2(this.currentTarget.y - this.y, this.currentTarget.x - this.x)
+      : this.phase * 0.3;
     context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.phase * 0.45);
+    context.translate(this.x, this.y + Math.sin(this.phase * 2.6) * 2.2);
     context.globalAlpha = this.bound ? 1 : 0.5;
-    context.fillStyle = "rgba(4,9,14,0.88)";
-    context.strokeStyle = config.color;
-    context.lineWidth = 2;
     context.shadowColor = config.color;
-    context.shadowBlur = 15;
-    polygon(context, [[0, -14], [13, -5], [11, 9], [0, 15], [-11, 9], [-13, -5]]);
-    context.fill();
-    context.stroke();
-    context.rotate(-this.phase * 0.9);
+    context.shadowBlur = 14 + pulse * 8;
+
+    context.save();
+    context.rotate(aim);
+    if (config.key === "healing") this.drawHealingModel(context, pulse);
+    else if (config.key === "energy") this.drawEnergyModel(context, pulse);
+    else if (config.key === "control") this.drawControlModel(context, pulse);
+    else this.drawEnhanceModel(context, pulse);
+    context.restore();
+
+    context.shadowBlur = 18;
     context.fillStyle = config.color;
     context.beginPath();
-    context.arc(0, 0, 4.5, 0, TAU);
+    context.arc(0, 0, 4.5 + pulse * 1.2, 0, TAU);
     context.fill();
+    context.fillStyle = "rgba(239,255,252,0.9)";
+    context.beginPath();
+    context.arc(1.2, -1.2, 1.35, 0, TAU);
+    context.fill();
+
+    if (this.attackFlash > 0) {
+      context.save();
+      context.rotate(aim);
+      context.globalAlpha = this.attackFlash;
+      context.fillStyle = "#f4fffd";
+      polygon(context, [[19, 0], [8, -6], [7, 6]]);
+      context.fill();
+      context.restore();
+    }
+
     context.shadowBlur = 0;
     context.strokeStyle = this.hitFlash > 0 ? "#fff" : "rgba(220,239,236,0.38)";
+    context.lineWidth = 1.5;
     context.beginPath();
-    context.arc(0, 0, 18, 0, TAU * (this.durability / this.maxDurability));
+    context.arc(0, 0, 23, -Math.PI / 2, -Math.PI / 2 + TAU * (this.durability / this.maxDurability));
+    context.stroke();
+    context.strokeStyle = `${config.color}66`;
+    context.beginPath();
+    context.arc(0, 0, 19.5, Math.PI / 2, Math.PI / 2 + TAU * (this.energy / this.maxEnergy));
     context.stroke();
     if (!this.bound) {
       context.strokeStyle = "rgba(190,204,207,0.38)";
       context.setLineDash([3, 4]);
       context.beginPath();
-      context.arc(0, 0, 23, 0, TAU);
+      context.arc(0, 0, 28, 0, TAU);
       context.stroke();
     }
     context.restore();
+  }
+
+  drawHealingModel(context, pulse) {
+    context.save();
+    context.rotate(this.phase * 0.9);
+    context.fillStyle = "rgba(197,255,229,0.72)";
+    context.strokeStyle = this.config.color;
+    context.lineWidth = 1.5;
+    for (let i = 0; i < 4; i += 1) {
+      context.rotate(Math.PI / 2);
+      context.beginPath();
+      context.ellipse(0, -13 - pulse * 2, 6.5, 12, 0, 0, TAU);
+      context.fill();
+      context.stroke();
+    }
+    context.restore();
+    context.fillStyle = "#10252a";
+    context.strokeStyle = "#bfffe3";
+    context.lineWidth = 2;
+    roundedRectPath(context, -12, -10, 24, 20, 7);
+    context.fill();
+    context.stroke();
+    context.fillStyle = this.config.color;
+    context.fillRect(-2, -8, 4, 16);
+    context.fillRect(-8, -2, 16, 4);
+  }
+
+  drawEnergyModel(context, pulse) {
+    context.save();
+    context.rotate(-this.phase * 1.35);
+    context.strokeStyle = this.config.color;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(0, 0, 16 + pulse * 2, 0.25, 2.4);
+    context.arc(0, 0, 16 + pulse * 2, 3.4, 5.75);
+    context.stroke();
+    for (let i = 0; i < 4; i += 1) {
+      context.rotate(Math.PI / 2);
+      context.fillStyle = "#183a50";
+      roundedRectPath(context, 10, -4, 12, 8, 2);
+      context.fill();
+      context.strokeRect(11, -3, 9, 6);
+    }
+    context.restore();
+    context.fillStyle = "#081b2a";
+    context.strokeStyle = "#a6dcff";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(0, 0, 11, 0, TAU);
+    context.fill();
+    context.stroke();
+    context.save();
+    context.rotate(this.phase * 2.2);
+    context.fillStyle = this.config.color;
+    for (let i = 0; i < 3; i += 1) {
+      context.rotate(TAU / 3);
+      polygon(context, [[2, -2], [10, 0], [2, 3]]);
+      context.fill();
+    }
+    context.restore();
+  }
+
+  drawControlModel(context, pulse) {
+    const jaw = 3 + this.attackFlash * 4;
+    context.fillStyle = "#171327";
+    context.strokeStyle = this.config.color;
+    context.lineWidth = 2;
+    polygon(context, [[-15, 0], [0, -14], [15, 0], [0, 14]]);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#30244d";
+    polygon(context, [[-23, -12 - jaw], [-7, -8], [-13, -1], [-27, -3]]);
+    context.fill();
+    polygon(context, [[-23, 12 + jaw], [-7, 8], [-13, 1], [-27, 3]]);
+    context.fill();
+    context.strokeStyle = `rgba(208,185,255,${0.42 + pulse * 0.4})`;
+    context.setLineDash([3, 3]);
+    context.beginPath();
+    context.arc(0, 0, 19 + pulse * 2, -1.15, 1.15);
+    context.stroke();
+    context.setLineDash([]);
+  }
+
+  drawEnhanceModel(context, pulse) {
+    context.save();
+    context.rotate(this.phase * 0.7);
+    context.strokeStyle = this.config.color;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(0, 0, 18 + pulse * 2, 0, TAU);
+    context.stroke();
+    for (let i = 0; i < 3; i += 1) {
+      context.rotate(TAU / 3);
+      context.fillStyle = "rgba(228,185,104,0.5)";
+      polygon(context, [[10, -5], [27, 0], [10, 5], [15, 0]]);
+      context.fill();
+      context.stroke();
+    }
+    context.restore();
+    context.fillStyle = "#2c2418";
+    context.strokeStyle = "#ffe1a0";
+    context.lineWidth = 2;
+    polygon(context, [[0, -13], [12, -5], [10, 10], [0, 14], [-10, 10], [-12, -5]]);
+    context.fill();
+    context.stroke();
+    context.strokeStyle = this.config.color;
+    context.beginPath();
+    context.moveTo(-8, 0); context.lineTo(0, -8); context.lineTo(8, 0); context.lineTo(0, 8); context.closePath();
+    context.stroke();
   }
 }
 
@@ -2608,34 +2794,64 @@ class EngineerPlayer extends Player {
       context.stroke();
       context.shadowBlur = 0;
     } else {
-      context.fillStyle = "#17252d";
-      polygon(context, [[-22, -19], [10, -21], [21, -8], [15, 19], [-8, 25], [-27, 9]]);
+      context.fillStyle = "#13222b";
+      polygon(context, [[-24, -15], [-8, -23], [13, -18], [21, -8], [16, 18], [-7, 23], [-27, 10]]);
       context.fill();
-      context.fillStyle = "#29464b";
-      polygon(context, [[-15, -14], [8, -15], [13, -4], [6, 17], [-12, 19], [-21, 7]]);
+      context.fillStyle = "#91c8c2";
+      polygon(context, [[-17, -14], [7, -17], [14, -6], [7, 15], [-11, 18], [-21, 7]]);
+      context.fill();
+      context.fillStyle = "#d8eee8";
+      polygon(context, [[-3, -15], [9, -12], [5, 2], [-5, 5], [-12, -7]]);
+      context.fill();
+      context.fillStyle = "#6e627f";
+      polygon(context, [[-10, 17], [4, 15], [10, 25], [-3, 22]]);
+      context.fill();
+      context.fillStyle = "#202637";
+      roundedRectPath(context, -24, -20, 12, 15, 5);
+      context.fill();
+      roundedRectPath(context, -24, 6, 12, 15, 5);
       context.fill();
       context.strokeStyle = this.currentMagic.color;
       context.lineWidth = 2;
       context.beginPath();
       context.moveTo(-13, -9); context.lineTo(8, 14);
       context.stroke();
+      context.fillStyle = "#f0b8c4";
+      polygon(context, [[-4, -4], [-10, -9], [-9, -1], [-10, 7], [-3, 2], [3, 6], [2, -2]]);
+      context.fill();
     }
 
-    context.fillStyle = "#d0b6a2";
+    // Fluffy hair, soft face and small side-tie keep the engineer readable as
+    // a cute adult androgynous boy even at combat scale.
+    context.fillStyle = "#101923";
     context.beginPath();
-    context.arc(8, 0, 10.5, 0, TAU);
+    context.ellipse(2, -12, 8, 5, -0.35, 0, TAU);
+    context.ellipse(-4, -16, 6, 3.5, -0.7, 0, TAU);
     context.fill();
-    context.fillStyle = "#111b23";
+    context.fillStyle = "#e0bdae";
     context.beginPath();
-    context.arc(4, 0, 12, Math.PI * 0.52, Math.PI * 1.48);
-    context.quadraticCurveTo(9, -13, 17, -6);
-    context.lineTo(12, 0);
+    context.arc(8, 0, 11.5, 0, TAU);
+    context.fill();
+    context.fillStyle = "#121c27";
+    context.beginPath();
+    context.arc(4, 0, 13, Math.PI * 0.48, Math.PI * 1.5);
+    context.quadraticCurveTo(9, -15, 19, -7);
+    context.quadraticCurveTo(13, -4, 11, 0);
+    context.fill();
+    context.fillStyle = "#f2a8b7";
+    context.globalAlpha = 0.65;
+    context.beginPath();
+    context.ellipse(15, 5, 3.2, 1.6, 0.3, 0, TAU);
+    context.fill();
+    context.globalAlpha = 1;
+    context.fillStyle = "#d9fff7";
+    context.beginPath();
+    context.arc(16, -2.5, 1.8, 0, TAU);
     context.fill();
     context.fillStyle = this.currentMagic.color;
     context.shadowColor = this.currentMagic.color;
     context.shadowBlur = 9;
-    context.fillRect(14, -3, 3, 2);
-    context.fillRect(14, 2, 3, 2);
+    context.fillRect(4, -12, 5, 2);
     context.shadowBlur = 0;
 
     context.strokeStyle = "#ad8754";
@@ -4593,23 +4809,49 @@ class Game {
     const portraitHeight = animatedPortraitReady ? portraitVideo.videoHeight : portraitImage.naturalHeight;
     if (engineer) {
       const gradient = ctx.createLinearGradient(x + 12, y + 12, x + 76, y + 90);
-      gradient.addColorStop(0, "#1d3f45");
-      gradient.addColorStop(1, "#09131b");
+      gradient.addColorStop(0, "#416d70");
+      gradient.addColorStop(0.5, "#172b35");
+      gradient.addColorStop(1, "#0b121c");
       ctx.fillStyle = gradient;
       ctx.fillRect(x + 12, y + 12, 64, 78);
       ctx.save();
       ctx.translate(x + 44, y + 49);
-      ctx.fillStyle = "#17272e";
-      polygon(ctx, [[-21, 32], [-17, 1], [-9, -9], [12, -8], [20, 3], [21, 32]]);
+      ctx.fillStyle = "#8ec3bd";
+      polygon(ctx, [[-23, 34], [-18, 3], [-10, -9], [13, -7], [22, 5], [23, 34]]);
       ctx.fill();
-      ctx.fillStyle = "#d0b6a2";
+      ctx.fillStyle = "#dcefe9";
+      polygon(ctx, [[-12, -5], [9, -6], [13, 11], [-4, 17], [-18, 7]]);
+      ctx.fill();
+      ctx.fillStyle = "#efb0bf";
+      polygon(ctx, [[-5, 8], [-13, 3], [-12, 13], [-4, 10], [5, 14], [4, 5]]);
+      ctx.fill();
+      ctx.fillStyle = "#121c27";
       ctx.beginPath();
-      ctx.arc(2, -14, 11, 0, TAU);
+      ctx.ellipse(-4, -27, 12, 8, -0.45, 0, TAU);
+      ctx.ellipse(-13, -34, 7, 4, -0.7, 0, TAU);
       ctx.fill();
-      ctx.fillStyle = "#101922";
+      ctx.fillStyle = "#dfbdad";
       ctx.beginPath();
-      ctx.arc(-2, -16, 12, Math.PI * 0.5, Math.PI * 1.55);
+      ctx.arc(3, -17, 12, 0, TAU);
       ctx.fill();
+      ctx.fillStyle = "#111a25";
+      ctx.beginPath();
+      ctx.arc(-1, -19, 14, Math.PI * 0.45, Math.PI * 1.55);
+      ctx.quadraticCurveTo(5, -35, 16, -25);
+      ctx.lineTo(9, -18);
+      ctx.fill();
+      ctx.fillStyle = "#edfdfa";
+      ctx.beginPath();
+      ctx.ellipse(8, -18, 2.2, 3, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#f09fb0";
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.ellipse(10, -11, 4, 2, 0, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = this.player.currentMagic.color;
+      ctx.fillRect(-2, -32, 6, 2);
       ctx.strokeStyle = this.player.currentMagic.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
