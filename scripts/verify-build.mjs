@@ -45,6 +45,7 @@ for (const pathname of [
   "/assets/boss-eheng-portrait.png",
   "/assets/li-xingyao-portrait-v5-loop-locked.mp4",
   "/assets/li-xingyao-animation-v5/keyframe-01.png",
+  "/assets/cheng-wenyu-animation-v1/keyframe-01.png",
 ]) {
   const response = await fetchPath(pathname);
   assert.equal(response.status, 200, `${pathname} should be deployable`);

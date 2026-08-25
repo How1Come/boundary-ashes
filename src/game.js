@@ -31,6 +31,7 @@ const volumeSlider = document.getElementById("volume-slider");
 const volumeValue = document.getElementById("volume-value");
 const muteButton = document.getElementById("mute-button");
 const portraitVideo = document.getElementById("hero-portrait-video");
+const engineerPortrait = document.getElementById("engineer-portrait-image");
 const engineerHero = document.getElementById("engineer-hero");
 const characterSubtitle = document.getElementById("character-subtitle");
 const characterIntro = document.getElementById("character-intro");
@@ -38,6 +39,8 @@ const controlGrid = document.getElementById("control-grid");
 const characterButtons = [...document.querySelectorAll("[data-character]")];
 const portraitImage = new Image();
 portraitImage.src = "./assets/li-xingyao-animation-v5/keyframe-01.png";
+const engineerPortraitAsset = new Image();
+engineerPortraitAsset.src = "./assets/cheng-wenyu-animation-v1/keyframe-01.png";
 const bossPortraitImage = new Image();
 bossPortraitImage.src = "./assets/boss-eheng-portrait.png";
 
@@ -3185,7 +3188,8 @@ class Game {
       portraitVideo.setAttribute("aria-hidden", characterId === "wenyu" ? "true" : "false");
       syncPortraitMotion();
     }
-    if (engineerHero) engineerHero.setAttribute("aria-hidden", characterId === "wenyu" ? "false" : "true");
+    if (engineerPortrait) engineerPortrait.setAttribute("aria-hidden", characterId === "wenyu" ? "false" : "true");
+    if (engineerHero) engineerHero.setAttribute("aria-hidden", "true");
     try { localStorage.setItem("boundary-ashes-character", characterId); } catch (error) {}
     if (announce) this.sound.tone(characterId === "wenyu" ? 285 : 410, 0.2, "triangle", 0.07, 120);
   }
@@ -4807,7 +4811,21 @@ class Game {
     const portraitSource = animatedPortraitReady ? portraitVideo : portraitImage;
     const portraitWidth = animatedPortraitReady ? portraitVideo.videoWidth : portraitImage.naturalWidth;
     const portraitHeight = animatedPortraitReady ? portraitVideo.videoHeight : portraitImage.naturalHeight;
-    if (engineer) {
+    if (engineer && engineerPortraitAsset.complete && engineerPortraitAsset.naturalWidth > 0) {
+      const sourceWidth = engineerPortraitAsset.naturalWidth;
+      const sourceHeight = engineerPortraitAsset.naturalHeight;
+      ctx.drawImage(
+        engineerPortraitAsset,
+        sourceWidth * 0.28,
+        sourceHeight * 0.015,
+        sourceWidth * 0.44,
+        sourceHeight * 0.268,
+        x + 12,
+        y + 12,
+        64,
+        78,
+      );
+    } else if (engineer) {
       const gradient = ctx.createLinearGradient(x + 12, y + 12, x + 76, y + 90);
       gradient.addColorStop(0, "#416d70");
       gradient.addColorStop(0.5, "#172b35");

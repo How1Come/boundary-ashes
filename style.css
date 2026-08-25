@@ -104,6 +104,25 @@ body::before {
   mask-image: linear-gradient(to right, transparent 0%, #000 17%, #000 88%, transparent 100%);
 }
 
+.engineer-portrait {
+  position: absolute;
+  z-index: 1;
+  right: 1.5vw;
+  bottom: -5vh;
+  width: min(52vw, 760px);
+  height: 108vh;
+  object-fit: contain;
+  object-position: 50% 50%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(28px);
+  transition: opacity 340ms ease, transform 420ms ease, visibility 340ms;
+  filter: saturate(0.94) contrast(1.04) drop-shadow(-18px 8px 40px rgba(83, 190, 181, 0.2));
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 13%, #000 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 13%, #000 90%, transparent 100%);
+}
+
 .engineer-hero {
   --engineer-accent: #63d8d0;
   position: absolute;
@@ -121,7 +140,8 @@ body::before {
 }
 
 body.character-wenyu .hero-portrait { opacity: 0; }
-body.character-wenyu .engineer-hero { opacity: 0.82; visibility: visible; transform: translateX(0); }
+body.character-wenyu .engineer-portrait { opacity: 0.88; visibility: visible; transform: translateX(0); }
+body.character-wenyu .engineer-hero { opacity: 0; visibility: hidden; }
 
 .engineer-frame {
   position: absolute;
@@ -1563,6 +1583,8 @@ kbd {
   .choice-grid { grid-template-columns: repeat(3, minmax(190px, 1fr)); width: 95vw; }
   .title-content { width: 68vw; margin-right: 28vw; }
   .hero-portrait { right: -15vw; opacity: 0.52; }
+  .engineer-portrait { right: -10vw; width: 60vw; }
+  body.character-wenyu .engineer-portrait { opacity: 0.62; }
   #tutorial-dialog { grid-template-columns: 90px minmax(0, 1fr) 105px; }
   .will-avatar { width: 76px; height: 76px; }
   .codex-layout { grid-template-columns: 220px minmax(0, 1fr); }
@@ -1584,6 +1606,7 @@ kbd {
   .choice-card { min-height: 225px; padding-top: 18px; }
   .choice-icon { margin: 12px 0; }
   .hero-portrait { bottom: -18vh; }
+  .engineer-portrait { bottom: -12vh; }
   #tutorial-dialog { min-height: 128px; padding-block: 12px; }
   .will-avatar { width: 70px; height: 70px; }
   .tutorial-copy p { min-height: 28px; line-height: 1.5; }
