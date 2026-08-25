@@ -19,6 +19,7 @@ await Promise.all([
   cp(new URL("assets/li-xingyao-portrait-v5-loop-locked.mp4", root), new URL("assets/li-xingyao-portrait-v5-loop-locked.mp4", client)),
   cp(new URL("assets/li-xingyao-animation-v5/keyframe-01.png", root), new URL("assets/li-xingyao-animation-v5/keyframe-01.png", client), { recursive: true }),
   cp(new URL("assets/cheng-wenyu-animation-v2/keyframe-01.png", root), new URL("assets/cheng-wenyu-animation-v2/keyframe-01.png", client)),
+  cp(new URL("assets/cheng-wenyu-portrait-v2-loop-locked.mp4", root), new URL("assets/cheng-wenyu-portrait-v2-loop-locked.mp4", client)),
   cp(new URL("worker/index.js", root), new URL("index.js", server)),
 ]);
 

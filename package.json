@@ -9,6 +9,7 @@
     "build": "node scripts/build.mjs",
     "check": "node --check src/dungeon-generator.js && node --check src/game.js && node --check worker/index.js",
     "portrait:v5": "node scripts/build-locked-portrait.mjs",
+    "portrait:wenyu:v2": "node scripts/build-wenyu-portrait.mjs",
     "verify": "npm run check && npm run build && node scripts/verify-build.mjs"
   }
 }

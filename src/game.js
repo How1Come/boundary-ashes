@@ -31,7 +31,7 @@ const volumeSlider = document.getElementById("volume-slider");
 const volumeValue = document.getElementById("volume-value");
 const muteButton = document.getElementById("mute-button");
 const portraitVideo = document.getElementById("hero-portrait-video");
-const engineerPortrait = document.getElementById("engineer-portrait-image");
+const engineerPortrait = document.getElementById("engineer-portrait-video");
 const engineerHero = document.getElementById("engineer-hero");
 const characterSubtitle = document.getElementById("character-subtitle");
 const characterIntro = document.getElementById("character-intro");
@@ -46,13 +46,15 @@ bossPortraitImage.src = "./assets/boss-eheng-portrait.png";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const syncPortraitMotion = () => {
-  if (!portraitVideo) return;
-  if (reducedMotion.matches) {
-    portraitVideo.pause();
-    portraitVideo.currentTime = 0;
-    return;
+  for (const video of [portraitVideo, engineerPortrait]) {
+    if (!video) continue;
+    if (reducedMotion.matches) {
+      video.pause();
+      video.currentTime = 0;
+    } else {
+      video.play().catch(() => {});
+    }
   }
-  portraitVideo.play().catch(() => {});
 };
 syncPortraitMotion();
 if (typeof reducedMotion.addEventListener === "function") {
@@ -4811,15 +4813,17 @@ class Game {
     const portraitSource = animatedPortraitReady ? portraitVideo : portraitImage;
     const portraitWidth = animatedPortraitReady ? portraitVideo.videoWidth : portraitImage.naturalWidth;
     const portraitHeight = animatedPortraitReady ? portraitVideo.videoHeight : portraitImage.naturalHeight;
-    if (engineer && engineerPortraitAsset.complete && engineerPortraitAsset.naturalWidth > 0) {
-      const sourceWidth = engineerPortraitAsset.naturalWidth;
-      const sourceHeight = engineerPortraitAsset.naturalHeight;
+    const engineerAnimatedReady = engineer && engineerPortrait && engineerPortrait.readyState >= 2 && engineerPortrait.videoWidth > 0;
+    const engineerSource = engineerAnimatedReady ? engineerPortrait : engineerPortraitAsset;
+    const engineerWidth = engineerAnimatedReady ? engineerPortrait.videoWidth : engineerPortraitAsset.naturalWidth;
+    const engineerHeight = engineerAnimatedReady ? engineerPortrait.videoHeight : engineerPortraitAsset.naturalHeight;
+    if (engineer && engineerWidth > 0 && engineerHeight > 0) {
       ctx.drawImage(
-        engineerPortraitAsset,
-        sourceWidth * 0.28,
-        sourceHeight * 0.07,
-        sourceWidth * 0.44,
-        sourceHeight * 0.268,
+        engineerSource,
+        engineerWidth * 0.28,
+        engineerHeight * 0.07,
+        engineerWidth * 0.44,
+        engineerHeight * 0.268,
         x + 12,
         y + 12,
         64,
