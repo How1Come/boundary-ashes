@@ -40,7 +40,7 @@ const characterButtons = [...document.querySelectorAll("[data-character]")];
 const portraitImage = new Image();
 portraitImage.src = "./assets/li-xingyao-animation-v5/keyframe-01.png";
 const engineerPortraitAsset = new Image();
-engineerPortraitAsset.src = "./assets/cheng-wenyu-animation-v1/keyframe-01.png";
+engineerPortraitAsset.src = "./assets/cheng-wenyu-animation-v2/keyframe-01.png";
 const bossPortraitImage = new Image();
 bossPortraitImage.src = "./assets/boss-eheng-portrait.png";
 
@@ -4817,7 +4817,7 @@ class Game {
       ctx.drawImage(
         engineerPortraitAsset,
         sourceWidth * 0.28,
-        sourceHeight * 0.015,
+        sourceHeight * 0.07,
         sourceWidth * 0.44,
         sourceHeight * 0.268,
         x + 12,
