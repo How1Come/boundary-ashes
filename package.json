@@ -7,9 +7,10 @@
   "scripts": {
     "start": "python3 -m http.server 5173",
     "build": "node scripts/build.mjs",
-    "check": "node --check src/dungeon-generator.js && node --check src/game.js && node --check worker/index.js",
+    "check": "node --check src/dungeon-generator.js && node --check src/room-layouts.js && node --check src/game.js && node --check worker/index.js",
+    "test:gameplay": "node scripts/verify-gameplay.mjs",
     "portrait:v5": "node scripts/build-locked-portrait.mjs",
     "portrait:wenyu:v2": "node scripts/build-wenyu-portrait.mjs",
-    "verify": "npm run check && npm run build && node scripts/verify-build.mjs"
+    "verify": "npm run check && npm run test:gameplay && npm run build && node scripts/verify-build.mjs"
   }
 }

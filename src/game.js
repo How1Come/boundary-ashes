@@ -2,6 +2,7 @@
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
 const titleScreen = document.getElementById("title-screen");
 const pauseScreen = document.getElementById("pause-screen");
 const settingsScreen = document.getElementById("settings-screen");
@@ -43,6 +44,32 @@ const engineerPortraitAsset = new Image();
 engineerPortraitAsset.src = "./assets/cheng-wenyu-animation-v2/keyframe-01.png";
 const bossPortraitImage = new Image();
 bossPortraitImage.src = "./assets/boss-eheng-portrait.png";
+
+const pixelAtlases = Object.freeze({
+  floor: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/floor-atlas.png" }),
+  entity: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/entity-atlas.png" }),
+  prop: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/prop-atlas.png" }),
+  vfx: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/vfx-atlas.png" }),
+});
+
+const PIXEL_ENTITY = Object.freeze({
+  xingyaoIdle: 0, xingyaoAttack: 1, wenyuIdle: 2, wenyuCast: 3,
+  robotHealing: 4, robotEnergy: 5, robotControl: 6, robotEnhance: 7,
+  wraith: 8, archer: 9, brute: 10, sentinel: 11,
+  anchor: 12, boss: 13, bossEnraged: 14, dummy: 15,
+});
+const PIXEL_PROP = Object.freeze({
+  pillar: 0, crates: 1, urns: 2, barricade: 3,
+  spikesIdle: 4, spikesActive: 5, emberIdle: 6, emberActive: 7,
+  coilIdle: 8, coilActive: 9, bladeIdle: 10, bladeActive: 11,
+  brazier: 12, lamp: 13, obelisk: 14, reliquary: 15,
+});
+const PIXEL_VFX = Object.freeze({
+  normal: 0, light: 1, meteor: 2, breeze: 3,
+  force: 4, tech: 5, healing: 6, energy: 7,
+  control: 8, enhance: 9, dodge: 10, construct: 11,
+  boundary: 12, warning: 13, star: 14, bossBreak: 15,
+});
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const syncPortraitMotion = () => {
@@ -437,6 +464,45 @@ function polygon(context, points) {
   context.closePath();
 }
 
+function pixel(value) {
+  return Math.round(value / 2) * 2;
+}
+
+function atlasLoaded(image) {
+  return Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
+}
+
+function drawAtlasCell(context, image, index, columns, rows, x, y, width, height, options = {}) {
+  if (!atlasLoaded(image)) return false;
+  const column = index % columns;
+  const row = Math.floor(index / columns);
+  const sx = Math.floor((column * image.naturalWidth) / columns);
+  const sy = Math.floor((row * image.naturalHeight) / rows);
+  const ex = Math.floor(((column + 1) * image.naturalWidth) / columns);
+  const ey = Math.floor(((row + 1) * image.naturalHeight) / rows);
+  const drawWidth = pixel(width);
+  const drawHeight = pixel(height);
+  context.save();
+  context.globalAlpha *= options.alpha ?? 1;
+  context.translate(pixel(x), pixel(y));
+  if (options.flipX) context.scale(-1, 1);
+  if (options.rotation) context.rotate(options.rotation);
+  context.imageSmoothingEnabled = false;
+  context.drawImage(image, sx, sy, ex - sx, ey - sy, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+  context.restore();
+  return true;
+}
+
+function drawPixelShadow(context, x, y, width, alpha = 0.4) {
+  context.save();
+  context.globalAlpha = alpha;
+  context.fillStyle = "#03050a";
+  const shadowWidth = pixel(width);
+  context.fillRect(pixel(x - shadowWidth / 2), pixel(y), shadowWidth, 8);
+  context.fillRect(pixel(x - shadowWidth * 0.36), pixel(y + 8), pixel(shadowWidth * 0.72), 4);
+  context.restore();
+}
+
 class Soundscape {
   constructor() {
     this.context = null;
@@ -665,6 +731,7 @@ class Effect {
     this.maxLife = this.life;
     this.size = options.size || 5;
     this.text = options.text || "";
+    this.kind = options.kind || "normal";
     this.rotation = options.rotation || 0;
     this.spin = options.spin || 0;
   }
@@ -686,11 +753,21 @@ class Effect {
     context.globalAlpha = this.type === "text" ? Math.min(1, t * 2) : t;
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
-    if (this.type === "particle") {
+    if (this.type === "pixelBurst") {
+      const index = PIXEL_VFX[this.kind] ?? PIXEL_VFX.normal;
+      const scale = this.size * (1.02 + (1 - t) * 0.18);
+      context.globalAlpha = Math.min(1, t * 2.6);
+      if (!drawAtlasCell(context, pixelAtlases.vfx, index, 4, 4, 0, 0, scale, scale)) {
+        context.fillStyle = this.color;
+        context.fillRect(-scale * 0.3, -4, scale * 0.6, 8);
+        context.fillRect(-4, -scale * 0.3, 8, scale * 0.6);
+      }
+    } else if (this.type === "particle") {
       context.fillStyle = this.color;
-      context.shadowColor = this.color;
-      context.shadowBlur = 12;
-      context.fillRect(-this.size * t, -1, this.size * 2 * t, 2);
+      const particleSize = Math.max(2, pixel(this.size * t));
+      context.fillRect(-particleSize, -2, particleSize * 2, 4);
+      context.fillStyle = "rgba(255,255,255,0.48)";
+      context.fillRect(-particleSize * 0.25, -2, Math.max(2, particleSize * 0.5), 2);
     } else if (this.type === "ring") {
       context.strokeStyle = this.color;
       context.lineWidth = 2 * t;
@@ -842,27 +919,26 @@ class Arrow {
   draw(context) {
     const color = this.color();
     context.save();
-    context.translate(this.x, this.y);
-    context.rotate(this.angle);
-    context.shadowColor = color;
-    context.shadowBlur = this.kind === "normal" ? 8 : 20;
-    context.strokeStyle = color;
-    context.lineWidth = this.kind === "meteor" ? 5 : 2.5;
-    context.beginPath();
-    context.moveTo(-18 - this.charge * 7, 0);
-    context.lineTo(8, 0);
-    context.stroke();
+    context.translate(pixel(this.x), pixel(this.y));
+    const direction = Math.round(this.angle / (TAU / 16)) * (TAU / 16);
+    context.rotate(direction);
+    context.fillStyle = color;
+    const shaft = pixel(22 + this.charge * 8);
+    const thickness = this.kind === "meteor" ? 6 : 4;
+    context.fillRect(-shaft, -thickness / 2, shaft + 8, thickness);
+    context.fillStyle = "rgba(255,255,255,0.72)";
+    context.fillRect(-shaft + 4, -thickness / 2, Math.max(6, shaft * 0.42), 2);
+    context.fillStyle = color;
     context.fillStyle = color;
     polygon(context, [[13, 0], [3, -5], [5, 0], [3, 5]]);
     context.fill();
     if (this.kind === "meteor") {
-      context.globalAlpha = 0.42;
-      context.beginPath();
-      context.arc(-2, 0, 12, 0, TAU);
-      context.fill();
+      context.globalAlpha = 0.44;
+      context.fillRect(-12, -10, 18, 20);
+      context.fillRect(-18, -6, 8, 12);
     } else if (this.kind === "light") {
       context.globalAlpha = 0.28;
-      context.fillRect(-42, -2, 50, 4);
+      context.fillRect(-44, -4, 52, 8);
     }
     context.restore();
   }
@@ -905,17 +981,17 @@ class EnemyProjectile {
 
   draw(context) {
     context.save();
-    context.translate(this.x, this.y);
+    context.translate(pixel(this.x), pixel(this.y));
     context.fillStyle = this.color;
-    context.shadowColor = this.color;
-    context.shadowBlur = 18;
-    context.beginPath();
-    context.arc(0, 0, this.r, 0, TAU);
+    const size = Math.max(6, pixel(this.r * 1.5));
+    polygon(context, [[0, -size], [size, 0], [0, size], [-size, 0]]);
     context.fill();
-    context.globalAlpha = 0.26;
-    context.beginPath();
-    context.arc(0, 0, this.r * 2.1, 0, TAU);
-    context.fill();
+    context.fillStyle = "rgba(255,255,255,0.74)";
+    context.fillRect(-2, -2, 4, 4);
+    context.globalAlpha = 0.24;
+    context.fillStyle = this.color;
+    context.fillRect(-size - 4, -2, (size + 4) * 2, 4);
+    context.fillRect(-2, -size - 4, 4, (size + 4) * 2);
     context.restore();
   }
 }
@@ -1312,20 +1388,19 @@ class Enemy {
   draw(context, game) {
     const tethered = this.tetherTime > 0;
     context.save();
-    context.translate(this.x, this.y);
+    context.translate(pixel(this.x), pixel(this.y));
     context.globalAlpha = this.dead ? 0 : 1;
-    context.fillStyle = "rgba(0,0,0,0.35)";
-    context.beginPath();
-    context.ellipse(0, this.r * 0.72, this.r * 0.9, this.r * 0.35, 0, 0, TAU);
-    context.fill();
+    drawPixelShadow(context, 0, this.r * 0.72, this.type === "boss" ? 96 : this.r * 1.7, 0.38);
 
-    if (this.type === "wraith") this.drawWraith(context);
-    else if (this.type === "archer") this.drawArcher(context);
-    else if (this.type === "brute") this.drawBrute(context);
-    else if (this.type === "sentinel") this.drawSentinel(context);
-    else if (this.type === "anchor") this.drawAnchor(context);
-    else if (this.type === "dummy") this.drawDummy(context);
-    else this.drawBoss(context);
+    if (!this.drawPixelModel(context)) {
+      if (this.type === "wraith") this.drawWraith(context);
+      else if (this.type === "archer") this.drawArcher(context);
+      else if (this.type === "brute") this.drawBrute(context);
+      else if (this.type === "sentinel") this.drawSentinel(context);
+      else if (this.type === "anchor") this.drawAnchor(context);
+      else if (this.type === "dummy") this.drawDummy(context);
+      else this.drawBoss(context);
+    }
 
     if (this.hitFlash > 0) {
       context.globalCompositeOperation = "screen";
@@ -1353,6 +1428,26 @@ class Enemy {
       ctx.fillStyle = tethered ? COLORS.force : "#d66f78";
       ctx.fillRect(this.x - w / 2, this.y - this.r - 17, w * clamp(this.hp / this.maxHp, 0, 1), 4);
     }
+  }
+
+  drawPixelModel(context) {
+    const index = {
+      wraith: PIXEL_ENTITY.wraith,
+      archer: PIXEL_ENTITY.archer,
+      brute: PIXEL_ENTITY.brute,
+      sentinel: PIXEL_ENTITY.sentinel,
+      anchor: PIXEL_ENTITY.anchor,
+      dummy: PIXEL_ENTITY.dummy,
+      boss: this.bossPhase >= 3 ? PIXEL_ENTITY.bossEnraged : PIXEL_ENTITY.boss,
+    }[this.type];
+    if (index === undefined) return false;
+    const size = this.type === "boss" ? 230 : this.type === "brute" ? 146 : this.type === "anchor" ? 142 : 126;
+    const bob = this.type === "wraith" || this.type === "sentinel" || this.type === "boss"
+      ? pixel(Math.sin(this.phase * 2) * 3)
+      : 0;
+    return drawAtlasCell(context, pixelAtlases.entity, index, 4, 4, 0, -size * 0.16 + bob, size, size, {
+      flipX: this.vx < -2,
+    });
   }
 
   drawWraith(context) {
@@ -1772,28 +1867,21 @@ class SupportRobot {
       ? Math.atan2(this.currentTarget.y - this.y, this.currentTarget.x - this.x)
       : this.phase * 0.3;
     context.save();
-    context.translate(this.x, this.y + Math.sin(this.phase * 2.6) * 2.2);
+    context.translate(pixel(this.x), pixel(this.y + Math.sin(this.phase * 2.6) * 2.2));
     context.globalAlpha = this.bound ? 1 : 0.5;
-    context.shadowColor = config.color;
-    context.shadowBlur = 14 + pulse * 8;
-
-    context.save();
-    context.rotate(aim);
-    if (config.key === "healing") this.drawHealingModel(context, pulse);
-    else if (config.key === "energy") this.drawEnergyModel(context, pulse);
-    else if (config.key === "control") this.drawControlModel(context, pulse);
-    else this.drawEnhanceModel(context, pulse);
-    context.restore();
-
-    context.shadowBlur = 18;
-    context.fillStyle = config.color;
-    context.beginPath();
-    context.arc(0, 0, 4.5 + pulse * 1.2, 0, TAU);
-    context.fill();
-    context.fillStyle = "rgba(239,255,252,0.9)";
-    context.beginPath();
-    context.arc(1.2, -1.2, 1.35, 0, TAU);
-    context.fill();
+    drawPixelShadow(context, 0, 16, 38, 0.34);
+    const spriteDrawn = drawAtlasCell(context, pixelAtlases.entity, PIXEL_ENTITY.robotHealing + this.configIndex, 4, 4, 0, -10, 96, 96, {
+      flipX: Math.cos(aim) < 0,
+    });
+    if (!spriteDrawn) {
+      context.save();
+      context.rotate(aim);
+      if (config.key === "healing") this.drawHealingModel(context, pulse);
+      else if (config.key === "energy") this.drawEnergyModel(context, pulse);
+      else if (config.key === "control") this.drawControlModel(context, pulse);
+      else this.drawEnhanceModel(context, pulse);
+      context.restore();
+    }
 
     if (this.attackFlash > 0) {
       context.save();
@@ -1805,7 +1893,6 @@ class SupportRobot {
       context.restore();
     }
 
-    context.shadowBlur = 0;
     context.strokeStyle = this.hitFlash > 0 ? "#fff" : "rgba(220,239,236,0.38)";
     context.lineWidth = 1.5;
     context.beginPath();
@@ -2159,6 +2246,7 @@ class Player {
     this.game.showToast(`魔法箭 · ${this.currentMagic.name}`);
     this.game.sound.tone(360 + this.magicIndex * 100, 0.22, "sine", 0.11, 140);
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 40);
+    this.game.pixelBurst(this.x, this.y - 14, this.currentMagic.key, 92, 0.42);
   }
 
   toggleSpirit() {
@@ -2235,6 +2323,7 @@ class Player {
     this.charge = 0;
     this.game.sound.roll();
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 36);
+    this.game.pixelBurst(this.x, this.y, "dodge", 118, 0.36, Math.atan2(this.rollDir.y, this.rollDir.x));
   }
 
   fireRollVolley() {
@@ -2268,6 +2357,7 @@ class Player {
     this.danceCooldown = this.danceCooldownMax;
     this.game.showToast("灵舞 · 星轨展开");
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 130);
+    this.game.pixelBurst(this.x, this.y - 18, "enhance", 180, 0.62);
     this.game.sound.tone(220, 0.5, "sine", 0.14, 440);
   }
 
@@ -2308,8 +2398,44 @@ class Player {
     if (this.hp <= 0) this.game.defeat();
   }
 
+  drawPixelModel(context, alpha) {
+    if (!atlasLoaded(pixelAtlases.entity)) return false;
+    drawPixelShadow(context, this.x - 2, this.y + 19, 46, 0.42);
+    context.save();
+    context.globalAlpha = alpha;
+    context.translate(pixel(this.x), pixel(this.y));
+    if (this.dancing) {
+      context.globalAlpha *= 0.46 + Math.sin(this.stepPhase * 1.7) * 0.1;
+      context.strokeStyle = this.currentMagic.color;
+      context.lineWidth = 4;
+      context.strokeRect(-39, -58, 78, 78);
+      context.fillStyle = this.currentMagic.color;
+      for (let i = 0; i < 4; i += 1) {
+        const angle = i * Math.PI / 2 + this.stepPhase * 0.12;
+        context.fillRect(pixel(Math.cos(angle) * 45) - 3, pixel(Math.sin(angle) * 45) - 3, 6, 6);
+      }
+      context.globalAlpha = alpha;
+    }
+    const attacking = this.charge > 0.06;
+    drawAtlasCell(context, pixelAtlases.entity, attacking ? PIXEL_ENTITY.xingyaoAttack : PIXEL_ENTITY.xingyaoIdle, 4, 4, 0, -29, 120, 124, {
+      flipX: Math.cos(this.facing) < 0,
+    });
+    if (attacking) {
+      const direction = Math.round(this.facing / (TAU / 16)) * (TAU / 16);
+      context.rotate(direction);
+      context.fillStyle = COLORS.gold;
+      context.fillRect(22, -2, 24 + pixel(this.charge * 18), 4);
+      context.fillStyle = "#fff0b8";
+      context.fillRect(24, -2, 12, 2);
+    }
+    context.restore();
+    if (this.spiritActive) this.drawSpirit(context);
+    return true;
+  }
+
   draw(context) {
     const alpha = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0 ? 0.48 : 1;
+    if (this.drawPixelModel(context, alpha)) return;
     context.save();
     context.globalAlpha = alpha;
     context.translate(this.x, this.y);
@@ -2466,23 +2592,20 @@ class Player {
 
   drawSpirit(context) {
     context.save();
-    context.translate(this.spiritX, this.spiritY);
-    context.rotate(this.spiritPhase * 0.4);
+    context.translate(pixel(this.spiritX), pixel(this.spiritY));
     context.fillStyle = this.currentMagic.color;
-    context.shadowColor = this.currentMagic.color;
-    context.shadowBlur = 22;
     context.globalAlpha = 0.88;
-    polygon(context, [[0, -12], [9, 0], [0, 12], [-9, 0]]);
+    polygon(context, [[0, -14], [10, 0], [0, 14], [-10, 0]]);
     context.fill();
-    context.globalAlpha = 0.36;
-    context.strokeStyle = this.currentMagic.color;
-    context.lineWidth = 2;
-    context.beginPath();
-    context.moveTo(-5, -4);
-    context.quadraticCurveTo(-27, -18, -22, 7);
-    context.moveTo(5, 4);
-    context.quadraticCurveTo(27, 18, 22, -7);
-    context.stroke();
+    context.fillStyle = "rgba(255,255,255,0.82)";
+    context.fillRect(-2, -7, 4, 8);
+    context.globalAlpha = 0.4;
+    context.fillStyle = this.currentMagic.color;
+    const wing = 12 + pixel(Math.sin(this.spiritPhase * 4) * 3);
+    context.fillRect(-wing - 10, -4, wing, 4);
+    context.fillRect(10, 2, wing, 4);
+    context.fillRect(-wing - 4, 2, 8, 4);
+    context.fillRect(wing - 4, -4, 8, 4);
     context.restore();
   }
 }
@@ -2714,6 +2837,7 @@ class EngineerPlayer extends Player {
     this.game.stats.danceUses += 1;
     this.game.showToast(`归恒机甲展开 · 回收能量 ${Math.round(recovered)}`);
     this.game.shockwave(this.x, this.y, "#63d8d0", 145);
+    this.game.pixelBurst(this.x, this.y - 18, "construct", 190, 0.68);
     this.game.sound.tone(115, 0.55, "sawtooth", 0.12, 390);
   }
 
@@ -2732,6 +2856,7 @@ class EngineerPlayer extends Player {
     this.game.stats.manufactures += 1;
     this.game.showToast(`自动制造 · ${robot.config.name}机器人 #${this.manufacturedCount}`);
     this.game.shockwave(robot.x, robot.y, robot.config.color, 66);
+    this.game.pixelBurst(robot.x, robot.y, "construct", 108, 0.52);
     this.game.sound.chime();
   }
 
@@ -2751,7 +2876,7 @@ class EngineerPlayer extends Player {
     super.hurt(amount * (this.dancing ? 0.72 : 1), angle);
   }
 
-  drawCompanions(context) {
+  drawCompanionLinks(context) {
     for (const robot of this.robots) {
       if (robot.bound) {
         context.save();
@@ -2765,12 +2890,43 @@ class EngineerPlayer extends Player {
         context.stroke();
         context.restore();
       }
-      robot.draw(context);
     }
+  }
+
+  drawCompanions(context) {
+    for (const robot of this.robots) robot.draw(context);
   }
 
   draw(context) {
     const alpha = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0 ? 0.48 : 1;
+    if (atlasLoaded(pixelAtlases.entity)) {
+      drawPixelShadow(context, this.x - 2, this.y + 20, this.dancing ? 62 : 48, 0.42);
+      context.save();
+      context.globalAlpha = alpha;
+      context.translate(pixel(this.x), pixel(this.y));
+      if (this.dancing) {
+        context.globalAlpha *= 0.38;
+        context.strokeStyle = "#63d8d0";
+        context.lineWidth = 6;
+        context.strokeRect(-46, -60, 92, 88);
+        context.fillStyle = "#d4ad64";
+        context.fillRect(-54, -4, 108, 6);
+        context.globalAlpha = alpha;
+      }
+      const casting = input.mouse.down || this.bindingMode || this.dancing;
+      drawAtlasCell(context, pixelAtlases.entity, casting ? PIXEL_ENTITY.wenyuCast : PIXEL_ENTITY.wenyuIdle, 4, 4, 0, -28, this.dancing ? 142 : 122, this.dancing ? 142 : 126, {
+        flipX: Math.cos(this.facing) < 0,
+      });
+      if (this.bindingMode) {
+        context.strokeStyle = this.currentMagic.color;
+        context.setLineDash([6, 6]);
+        context.lineDashOffset = -this.game.elapsed * 18;
+        context.strokeRect(-48, -62, 96, 94);
+        context.setLineDash([]);
+      }
+      context.restore();
+      return;
+    }
     context.save();
     context.globalAlpha = alpha;
     context.translate(this.x, this.y);
@@ -3276,7 +3432,7 @@ class Game {
 
   buildTutorialRoom() {
     this.rooms = new Map();
-    this.rooms.set("0,0", {
+    const room = {
       gx: 0,
       gy: 0,
       type: "tutorial",
@@ -3286,7 +3442,12 @@ class Game {
       started: true,
       seed: this.seed,
       obstacles: [],
-    });
+      mechanisms: [],
+      decorations: [],
+      layoutId: "tutorial-sanctum",
+      wallStyle: "training",
+    };
+    this.rooms.set("0,0", room);
   }
 
   buildDungeon(floorIndex = this.currentFloor) {
@@ -3312,29 +3473,16 @@ class Game {
   }
 
   createObstacles(room) {
-    if (room.type === "start" || room.type === "boss" || room.type === "tutorial") return [];
-    const random = mulberry32(room.seed);
-    const result = [];
-    const count = 2 + (this.floorConfig?.obstacleBonus || 0) + Math.floor(random() * 3);
-    for (let i = 0; i < count; i += 1) {
-      let tries = 0;
-      while (tries < 30) {
-        tries += 1;
-        const obstacle = {
-          x: 245 + random() * 1110,
-          y: 205 + random() * 490,
-          r: 29 + random() * 24,
-          variant: (random() * 3) | 0,
-          phase: random() * TAU,
-        };
-        if (Math.hypot(obstacle.x - W / 2, obstacle.y - H / 2) < 145) continue;
-        if (result.every((other) => Math.hypot(other.x - obstacle.x, other.y - obstacle.y) > other.r + obstacle.r + 80)) {
-          result.push(obstacle);
-          break;
-        }
-      }
-    }
-    return result;
+    const layout = window.BoundaryRoomLayouts.select({
+      room,
+      floorIndex: this.currentFloor,
+      obstacleBonus: this.floorConfig?.obstacleBonus || 0,
+    });
+    room.layoutId = layout.id;
+    room.wallStyle = layout.wallStyle;
+    room.mechanisms = layout.mechanisms;
+    room.decorations = layout.decorations;
+    return layout.obstacles;
   }
 
   enterRoom(room, fromDirection) {
@@ -3492,6 +3640,7 @@ class Game {
 
   castBoundaryLines(boss, targetAngle, count, delay) {
     this.announceBossSkill("界线裁决", "离开紫红光带", delay + 0.65);
+    this.pixelBurst(boss.x, boss.y, "boundary", 150, 0.5, targetAngle);
     const spread = count === 2 ? Math.PI / 2 : Math.PI / count;
     for (let i = 0; i < count; i += 1) {
       this.hazards.push(new BossHazard("line", {
@@ -3520,11 +3669,13 @@ class Game {
         damage: boss.outgoingDamage() * 0.92,
         color: "#c459aa",
       }));
+      this.pixelBurst(clamp(base.x + Math.cos(angle) * offset, ARENA.left + 90, ARENA.right - 90), clamp(base.y + Math.sin(angle) * offset, ARENA.top + 90, ARENA.bottom - 90), "warning", 104, 0.58);
     }
   }
 
   castBoundaryCollapse(boss, safeRadius, delay) {
     this.announceBossSkill("归界收束", "进入中央界环以内", delay + 0.75);
+    this.pixelBurst(boss.x, boss.y, "boundary", 210, 0.62);
     this.hazards.push(new BossHazard("outside", {
       x: boss.x,
       y: boss.y,
@@ -3538,6 +3689,7 @@ class Game {
 
   castStarRing(boss, count, speed, rotationOffset = 0, announce = true) {
     if (announce) this.announceBossSkill("失序星环", "从校准刃之间寻找缺口", 1.8);
+    this.pixelBurst(boss.x, boss.y, "star", 176, 0.58, rotationOffset);
     const offset = this.elapsed * 0.8 + rotationOffset;
     for (let i = 0; i < count; i += 1) {
       if (i % 7 === 0) continue;
@@ -3577,6 +3729,7 @@ class Game {
     if (point.y < ARENA.top + radius + edgePadding || point.y > ARENA.bottom - radius - edgePadding) return false;
     if (this.player && dist(point, this.player) < minPlayerDistance) return false;
     if (this.currentRoom.obstacles.some((obstacle) => dist(point, obstacle) < obstacle.r + radius + 12)) return false;
+    if ((this.currentRoom.mechanisms || []).some((mechanism) => dist(point, mechanism) < mechanism.r + radius + 34)) return false;
     return this.enemies.every((enemy) => enemy.dead || dist(point, enemy) >= enemy.r + radius + enemyPadding);
   }
 
@@ -3625,6 +3778,7 @@ class Game {
       for (let x = ARENA.left + radius + 16; x <= ARENA.right - radius - 16; x += 28) {
         const point = { x, y };
         if (this.currentRoom.obstacles.some((obstacle) => dist(point, obstacle) < obstacle.r + radius + 12)) continue;
+        if ((this.currentRoom.mechanisms || []).some((mechanism) => dist(point, mechanism) < mechanism.r + radius + 34)) continue;
         const playerClearance = this.player ? dist(point, this.player) - this.player.r : 9999;
         const enemyClearance = this.enemies.reduce(
           (clearance, enemy) => Math.min(clearance, dist(point, enemy) - enemy.r),
@@ -3758,6 +3912,7 @@ class Game {
 
     this.player.update(dt);
     this.checkDoorTransition();
+    this.updateRoomMechanisms(dt);
     for (const enemy of this.enemies) enemy.update(dt, this);
     this.separateEnemies();
     this.arrows = this.arrows.filter((arrow) => arrow.update(dt, this));
@@ -3783,6 +3938,44 @@ class Game {
     if (this.pendingFloorReward && this.floorBannerTimer <= 2.15) {
       this.pendingFloorReward = false;
       this.offerUpgrade();
+    }
+  }
+
+  updateRoomMechanisms(dt) {
+    const mechanisms = this.currentRoom?.mechanisms || [];
+    for (const mechanism of mechanisms) {
+      mechanism.hitCooldown = Math.max(0, mechanism.hitCooldown - dt);
+      if (this.currentRoom.cleared) {
+        mechanism.state = "idle";
+        mechanism.progress = 0;
+        continue;
+      }
+      const progress = ((this.elapsed / mechanism.cycle + mechanism.phaseOffset) % 1 + 1) % 1;
+      const activeStart = mechanism.type === "blade" ? 0.52 : 0.66;
+      const activeEnd = mechanism.type === "blade" ? 0.91 : 0.84;
+      const previous = mechanism.state;
+      mechanism.progress = progress;
+      mechanism.state = progress >= activeStart && progress < activeEnd
+        ? "active"
+        : progress >= activeStart - 0.16 && progress < activeStart
+          ? "warning"
+          : "idle";
+      if (mechanism.state === "active" && previous !== "active") {
+        const kind = mechanism.type === "ember" ? "meteor" : mechanism.type === "coil" ? "tech" : mechanism.type === "blade" ? "boundary" : "warning";
+        this.effects.push(new Effect("pixelBurst", mechanism.x, mechanism.y - 6, { kind, size: mechanism.r * 2.4, life: 0.34 }));
+      }
+      if (mechanism.state !== "active" || mechanism.hitCooldown > 0) continue;
+      if (dist(mechanism, this.player) <= mechanism.r + this.player.r * 0.65) {
+        const angle = Math.atan2(this.player.y - mechanism.y, this.player.x - mechanism.x);
+        this.player.hurt(5.5 + Math.max(0, this.currentFloor) * 1.5, angle);
+        mechanism.hitCooldown = 0.72;
+      }
+      for (const robot of this.player.robots || []) {
+        if (robot.dead || dist(mechanism, robot) > mechanism.r + robot.r * 0.55) continue;
+        robot.takeDamage(3.5 + Math.max(0, this.currentFloor));
+        mechanism.hitCooldown = Math.max(mechanism.hitCooldown, 0.48);
+        break;
+      }
     }
   }
 
@@ -3952,6 +4145,7 @@ class Game {
       this.sound.hit(kind, amount, enemy.type, pan);
       this.floatText(enemy.x, enemy.y - enemy.r - 8, `${Math.ceil(amount)}`, kind === "normal" ? COLORS.gold : kind === "tether" ? COLORS.force : "#d9f5ee", amount > 50 ? 17 : 13);
       this.spark(enemy.x, enemy.y, kind === "normal" ? COLORS.gold : kind === "force" ? COLORS.force : "#beded9", amount > 50 ? 10 : 5);
+      this.pixelBurst(enemy.x, enemy.y - enemy.r * 0.18, kind === "tether" ? "force" : kind, amount > 50 ? 112 : 78, 0.3, angle);
       enemy.x += Math.cos(angle) * Math.min(13, amount * 0.1);
       enemy.y += Math.sin(angle) * Math.min(13, amount * 0.1);
       this.resolveObstacleOverlap(enemy);
@@ -3971,6 +4165,7 @@ class Game {
     this.shake = Math.max(this.shake, enemy.type === "boss" ? 18 : 4);
     this.spark(enemy.x, enemy.y, enemy.color, enemy.type === "boss" ? 42 : 15);
     this.shockwave(enemy.x, enemy.y, enemy.color, enemy.r * 1.8);
+    this.pixelBurst(enemy.x, enemy.y, enemy.type === "boss" ? "bossBreak" : enemy.type === "anchor" ? "boundary" : "normal", enemy.type === "boss" ? 250 : 110, enemy.type === "boss" ? 0.75 : 0.42);
     if (!["boss", "anchor", "dummy"].includes(enemy.type) && Math.random() < 0.58) {
       this.pickups.push(new Pickup(enemy.x, enemy.y, Math.random() < 0.2 ? "health" : "energy"));
     }
@@ -3989,6 +4184,7 @@ class Game {
   explode(x, y, damage, radius, source) {
     this.shockwave(x, y, "#f09a68", radius);
     this.spark(x, y, "#ffb072", 22);
+    this.pixelBurst(x, y, "meteor", Math.min(230, radius * 1.65), 0.52);
     this.shake = Math.max(this.shake, 8);
     this.sound.tone(90, 0.26, "sawtooth", 0.16, -42);
     for (const enemy of this.enemies) {
@@ -4018,6 +4214,10 @@ class Game {
 
   shockwave(x, y, color, size) {
     this.effects.push(new Effect("ring", x, y, { color, size, life: 0.48 }));
+  }
+
+  pixelBurst(x, y, kind = "normal", size = 84, life = 0.38, rotation = 0) {
+    this.effects.push(new Effect("pixelBurst", pixel(x), pixel(y), { kind, size, life, rotation }));
   }
 
   floatText(x, y, text, color, size) {
@@ -4522,12 +4722,17 @@ class Game {
     for (const hazard of this.hazards) hazard.draw(ctx, this.elapsed);
     this.drawTethers();
     for (const pickup of this.pickups) pickup.draw(ctx);
+    this.player.drawCompanionLinks?.(ctx);
+    const drawables = [
+      ...(this.currentRoom.obstacles || []).map((obstacle) => ({ y: obstacle.y + obstacle.r * 0.55, draw: () => this.drawObstacle(obstacle) })),
+      ...this.enemies.map((enemy) => ({ y: enemy.y + enemy.r * 0.62, draw: () => enemy.draw(ctx, this) })),
+      ...(this.player.robots || []).map((robot) => ({ y: robot.y + robot.r * 0.62, draw: () => robot.draw(ctx) })),
+      { y: this.player.y + this.player.r * 0.62, draw: () => this.player.draw(ctx) },
+    ].sort((a, b) => a.y - b.y);
+    for (const drawable of drawables) drawable.draw();
     for (const projectile of this.enemyProjectiles) projectile.draw(ctx);
     for (const arrow of this.arrows) arrow.draw(ctx);
-    this.player.drawCompanions?.(ctx);
-    for (const enemy of this.enemies) enemy.draw(ctx, this);
     for (const effect of this.effects) effect.draw(ctx);
-    this.player.draw(ctx);
     ctx.restore();
     this.drawLighting();
     this.drawHUD();
@@ -4603,7 +4808,11 @@ class Game {
     ctx.beginPath();
     ctx.rect(ARENA.left, ARENA.top, ARENA.right - ARENA.left, ARENA.bottom - ARENA.top);
     ctx.clip();
-    const random = mulberry32(this.currentRoom.seed);
+    const floorMaterial = this.currentRoom.type === "tutorial" ? 3 : clamp((this.currentFloor || 1) - 1, 0, 2);
+    drawAtlasCell(ctx, pixelAtlases.floor, floorMaterial, 2, 2, W / 2, H / 2, ARENA.right - ARENA.left, ARENA.bottom - ARENA.top, { alpha: 0.62 });
+    ctx.fillStyle = "rgba(3,7,12,0.2)";
+    ctx.fillRect(ARENA.left, ARENA.top, ARENA.right - ARENA.left, ARENA.bottom - ARENA.top);
+    const random = mulberry32(Math.imul((this.currentFloor || 0) + 7, 0x6d2b79f5));
     ctx.lineWidth = 1;
     for (let x = ARENA.left; x <= ARENA.right; x += 72) {
       ctx.strokeStyle = `rgba(${palette.accentRgb},${0.028 + random() * 0.025})`;
@@ -4634,14 +4843,100 @@ class Game {
     ctx.strokeStyle = "rgba(4,7,12,0.9)";
     ctx.lineWidth = 32;
     ctx.strokeRect(ARENA.left - 15, ARENA.top - 15, ARENA.right - ARENA.left + 30, ARENA.bottom - ARENA.top + 30);
+    this.drawPixelWalls();
     this.drawDoors();
-    for (const obstacle of this.currentRoom.obstacles) this.drawObstacle(obstacle);
+    this.drawRoomDecorations();
+    this.drawRoomMechanisms();
+  }
+
+  drawPixelWalls() {
+    const room = this.currentRoom;
+    const palette = this.floorConfig?.palette || DUNGEON_FLOORS[0].palette;
+    const styleIndex = ["gate", "training", "buttress", "alcove", "rune", "broken", "crystal", "regal", "sovereign"].indexOf(room.wallStyle);
+    const block = 64;
+    const hasLeft = this.rooms.has(keyOf(room.gx - 1, room.gy));
+    const hasRight = this.rooms.has(keyOf(room.gx + 1, room.gy));
+    const hasUp = this.rooms.has(keyOf(room.gx, room.gy - 1));
+    const hasDown = this.rooms.has(keyOf(room.gx, room.gy + 1));
+    ctx.save();
+    ctx.fillStyle = "#0a1018";
+    ctx.strokeStyle = `rgba(${palette.accentRgb},0.22)`;
+    ctx.lineWidth = 2;
+    for (let x = ARENA.left; x < ARENA.right; x += block) {
+      const center = x + block / 2;
+      const shade = ((Math.floor(x / block) + Math.max(0, styleIndex)) % 3) * 5;
+      ctx.fillStyle = `rgb(${12 + shade},${19 + shade},${27 + shade})`;
+      if (!(hasUp && Math.abs(center - W / 2) < ARENA.door * 0.64)) {
+        ctx.fillRect(x + 2, ARENA.top - 30, block - 4, 34);
+        ctx.strokeRect(x + 2, ARENA.top - 30, block - 4, 34);
+        ctx.fillStyle = "rgba(255,255,255,0.035)";
+        ctx.fillRect(x + 6, ARENA.top - 26, block - 12, 4);
+      }
+      ctx.fillStyle = `rgb(${10 + shade},${17 + shade},${25 + shade})`;
+      if (!(hasDown && Math.abs(center - W / 2) < ARENA.door * 0.64)) {
+        ctx.fillRect(x + 2, ARENA.bottom - 4, block - 4, 34);
+        ctx.strokeRect(x + 2, ARENA.bottom - 4, block - 4, 34);
+      }
+    }
+    for (let y = ARENA.top; y < ARENA.bottom; y += block) {
+      const center = y + block / 2;
+      const shade = ((Math.floor(y / block) + Math.max(0, styleIndex) + 1) % 3) * 5;
+      ctx.fillStyle = `rgb(${11 + shade},${18 + shade},${26 + shade})`;
+      if (!(hasLeft && Math.abs(center - H / 2) < ARENA.door * 0.64)) {
+        ctx.fillRect(ARENA.left - 30, y + 2, 34, block - 4);
+        ctx.strokeRect(ARENA.left - 30, y + 2, 34, block - 4);
+      }
+      if (!(hasRight && Math.abs(center - H / 2) < ARENA.door * 0.64)) {
+        ctx.fillRect(ARENA.right - 4, y + 2, 34, block - 4);
+        ctx.strokeRect(ARENA.right - 4, y + 2, 34, block - 4);
+      }
+    }
+    ctx.restore();
+  }
+
+  drawRoomDecorations() {
+    for (const decoration of this.currentRoom.decorations || []) {
+      const index = PIXEL_PROP[decoration.kind];
+      if (index === undefined) continue;
+      drawAtlasCell(ctx, pixelAtlases.prop, index, 4, 4, decoration.x, decoration.y - 12, 82, 82, { alpha: 0.66 });
+    }
+  }
+
+  drawRoomMechanisms() {
+    for (const mechanism of this.currentRoom.mechanisms || []) {
+      const active = mechanism.state === "active";
+      const pair = {
+        spikes: [PIXEL_PROP.spikesIdle, PIXEL_PROP.spikesActive],
+        ember: [PIXEL_PROP.emberIdle, PIXEL_PROP.emberActive],
+        coil: [PIXEL_PROP.coilIdle, PIXEL_PROP.coilActive],
+        blade: [PIXEL_PROP.bladeIdle, PIXEL_PROP.bladeActive],
+      }[mechanism.type];
+      if (!pair) continue;
+      const telegraph = mechanism.state === "warning";
+      if (telegraph) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 + Math.sin(this.elapsed * 18) * 0.18;
+        ctx.strokeStyle = mechanism.type === "ember" ? "#ff8b52" : mechanism.type === "coil" ? "#72cfff" : "#ef6b7f";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(pixel(mechanism.x - mechanism.r), pixel(mechanism.y - mechanism.r), pixel(mechanism.r * 2), pixel(mechanism.r * 2));
+        ctx.restore();
+      }
+      const drawn = drawAtlasCell(ctx, pixelAtlases.prop, active ? pair[1] : pair[0], 4, 4, mechanism.x, mechanism.y - 7, mechanism.r * 2.45, mechanism.r * 2.45, {
+        alpha: this.currentRoom.cleared ? 0.52 : 0.9,
+      });
+      if (!drawn) {
+        ctx.fillStyle = active ? "#e66b72" : "#28313a";
+        ctx.fillRect(pixel(mechanism.x - mechanism.r), pixel(mechanism.y - mechanism.r * 0.45), pixel(mechanism.r * 2), pixel(mechanism.r * 0.9));
+        ctx.strokeStyle = "#aeb9b4";
+        ctx.strokeRect(pixel(mechanism.x - mechanism.r), pixel(mechanism.y - mechanism.r * 0.45), pixel(mechanism.r * 2), pixel(mechanism.r * 0.9));
+      }
+    }
   }
 
   drawRoomSigil() {
     ctx.save();
     ctx.translate(W / 2, H / 2);
-    ctx.rotate(this.currentRoom.seed % 12);
+    ctx.rotate(((this.currentFloor || 0) * Math.PI) / 12);
     const accentRgb = this.floorConfig?.palette?.accentRgb || "116,224,193";
     const color = this.currentRoom.type === "boss" ? "rgba(184,156,255,0.09)" : `rgba(${accentRgb},0.055)`;
     ctx.strokeStyle = color;
@@ -4712,6 +5007,14 @@ class Game {
   }
 
   drawObstacle(obstacle) {
+    const spriteIndex = PIXEL_PROP[obstacle.kind];
+    if (spriteIndex !== undefined && atlasLoaded(pixelAtlases.prop)) {
+      const sizeMod = obstacle.kind === "pillar" ? 2.9 : obstacle.kind === "barricade" ? 2.75 : obstacle.kind === "urns" ? 2.35 : 2.55;
+      const size = obstacle.r * sizeMod;
+      drawPixelShadow(ctx, obstacle.x, obstacle.y + obstacle.r * 0.58, obstacle.r * 1.7, 0.42);
+      drawAtlasCell(ctx, pixelAtlases.prop, spriteIndex, 4, 4, obstacle.x, obstacle.y - obstacle.r * 0.28, size, size);
+      return;
+    }
     ctx.save();
     ctx.translate(obstacle.x, obstacle.y);
     ctx.fillStyle = "rgba(0,0,0,0.4)";
@@ -5296,5 +5599,9 @@ if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
     debugProbe.dataset.firstRobotX = String(player?.robots?.[0]?.x ?? "");
     debugProbe.dataset.firstRobotY = String(player?.robots?.[0]?.y ?? "");
     debugProbe.dataset.firstRobotBound = String(Boolean(player?.robots?.[0]?.bound));
+    debugProbe.dataset.layout = game.currentRoom?.layoutId || "";
+    debugProbe.dataset.mechanisms = String(game.currentRoom?.mechanisms?.length ?? 0);
+    debugProbe.dataset.activeMechanisms = String(game.currentRoom?.mechanisms?.filter((mechanism) => mechanism.state === "active").length ?? 0);
+    debugProbe.dataset.pixelAssetsReady = String(Object.values(pixelAtlases).every(atlasLoaded));
   }, 80);
 }

@@ -1,0 +1,28 @@
+{
+  "version": "pixel-v1",
+  "pixelScale": 2,
+  "atlases": {
+    "floor": { "file": "floor-atlas.png", "columns": 2, "rows": 2, "alpha": false },
+    "entity": { "file": "entity-atlas.png", "columns": 4, "rows": 4, "alpha": true },
+    "prop": { "file": "prop-atlas.png", "columns": 4, "rows": 4, "alpha": true },
+    "vfx": { "file": "vfx-atlas.png", "columns": 4, "rows": 4, "alpha": true }
+  },
+  "entities": {
+    "xingyaoIdle": 0, "xingyaoAttack": 1, "wenyuIdle": 2, "wenyuCast": 3,
+    "robotHealing": 4, "robotEnergy": 5, "robotControl": 6, "robotEnhance": 7,
+    "wraith": 8, "archer": 9, "brute": 10, "sentinel": 11,
+    "anchor": 12, "boss": 13, "bossEnraged": 14, "dummy": 15
+  },
+  "props": {
+    "pillar": 0, "crates": 1, "urns": 2, "barricade": 3,
+    "spikesIdle": 4, "spikesActive": 5, "emberIdle": 6, "emberActive": 7,
+    "coilIdle": 8, "coilActive": 9, "bladeIdle": 10, "bladeActive": 11,
+    "brazier": 12, "lamp": 13, "obelisk": 14, "reliquary": 15
+  },
+  "vfx": {
+    "normal": 0, "light": 1, "meteor": 2, "breeze": 3,
+    "force": 4, "tech": 5, "healing": 6, "energy": 7,
+    "control": 8, "enhance": 9, "dodge": 10, "construct": 11,
+    "boundary": 12, "warning": 13, "star": 14, "bossBreak": 15
+  }
+}

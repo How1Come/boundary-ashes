@@ -49,6 +49,8 @@ body::before {
   height: 100vh;
   object-fit: contain;
   cursor: crosshair;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .panel-screen {
