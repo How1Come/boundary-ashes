@@ -44,6 +44,8 @@ for (const pathname of [
   "/src/dungeon-generator.js",
   "/src/room-layouts.js",
   "/src/game.js",
+  "/src/character-animation.js",
+  "/src/soundscape.js",
   "/assets/boss-eheng-portrait.png",
   "/assets/li-xingyao-portrait-v5-loop-locked.mp4",
   "/assets/li-xingyao-animation-v5/keyframe-01.png",
@@ -54,6 +56,11 @@ for (const pathname of [
   "/assets/runtime/pixel-v1/entity-atlas.png",
   "/assets/runtime/pixel-v1/prop-atlas.png",
   "/assets/runtime/pixel-v1/vfx-atlas.png",
+  "/assets/runtime/hero-actions-v1/xingyao.png",
+  "/assets/runtime/hero-actions-v1/wenyu.png",
+  "/assets/runtime/hero-actions-v1/manifest.json",
+  "/assets/runtime/audio-v2/manifest.json",
+  "/assets/runtime/audio-v2/foley.pcm",
 ]) {
   const response = await fetchPath(pathname);
   assert.equal(response.status, 200, `${pathname} should be deployable`);

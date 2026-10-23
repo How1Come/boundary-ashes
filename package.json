@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A code-drawn 2D roguelike featuring Li Xingyao and Cheng Wenyu.",
+  "description": "A standalone 2D pixel-art dungeon roguelike featuring Li Xingyao and Cheng Wenyu.",
+  "author": "How1Come",
   "scripts": {
     "start": "python3 -m http.server 5173",
     "build": "node scripts/build.mjs",
-    "check": "node --check src/dungeon-generator.js && node --check src/room-layouts.js && node --check src/game.js && node --check worker/index.js",
+    "check": "node --check src/dungeon-generator.js && node --check src/room-layouts.js && node --check src/character-animation.js && node --check src/soundscape.js && node --check src/game.js && node --check worker/index.js",
     "test:gameplay": "node scripts/verify-gameplay.mjs",
+    "test:presentation": "node scripts/verify-presentation.mjs",
+    "audio:build": "node scripts/build-audio-bank.mjs",
     "portrait:v5": "node scripts/build-locked-portrait.mjs",
     "portrait:wenyu:v2": "node scripts/build-wenyu-portrait.mjs",
-    "verify": "npm run check && npm run test:gameplay && npm run build && node scripts/verify-build.mjs"
+    "verify": "npm run check && npm run test:gameplay && npm run test:presentation && npm run build && node scripts/verify-build.mjs"
   }
 }

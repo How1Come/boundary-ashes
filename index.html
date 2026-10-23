@@ -119,7 +119,7 @@
             <div class="settings-copy">
               <p class="settings-kicker">声音 · SOUND</p>
               <h3>调整战斗回响</h3>
-              <p>控制全部武器、技能、命中反馈与界律提示音。设置会自动保存。</p>
+              <p>弓弦、木石碰撞、怪物与技能回响。远处声源会自然减弱，设置会自动保存。</p>
             </div>
             <div class="volume-control">
               <label for="volume-slider">
@@ -132,6 +132,8 @@
             <div class="settings-actions">
               <button id="mute-button" class="sound-toggle" type="button" aria-pressed="false">静音 · 关闭</button>
               <button id="sound-preview-button" class="primary-button sound-preview" type="button">试听战斗音效</button>
+              <button id="creature-preview-button" class="secondary-button" type="button">试听怪物</button>
+              <button id="skill-preview-button" class="secondary-button" type="button">试听技能</button>
             </div>
           </div>
         </div>
@@ -247,6 +249,8 @@
     </main>
     <script src="./src/dungeon-generator.js" defer></script>
     <script src="./src/room-layouts.js" defer></script>
-    <script src="./src/game.js?v=20260827-pixel-dungeon-v1" defer></script>
+    <script src="./src/character-animation.js?v=20260906" defer></script>
+    <script src="./src/soundscape.js?v=20260906" defer></script>
+    <script src="./src/game.js?v=20260906-motion-audio" defer></script>
   </body>
 </html>

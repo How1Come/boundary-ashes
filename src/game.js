@@ -51,6 +51,7 @@ const pixelAtlases = Object.freeze({
   prop: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/prop-atlas.png" }),
   vfx: Object.assign(new Image(), { src: "./assets/runtime/pixel-v1/vfx-atlas.png" }),
 });
+BoundaryAnimation.preload();
 
 const PIXEL_ENTITY = Object.freeze({
   xingyaoIdle: 0, xingyaoAttack: 1, wenyuIdle: 2, wenyuCast: 3,
@@ -503,221 +504,7 @@ function drawPixelShadow(context, x, y, width, alpha = 0.4) {
   context.restore();
 }
 
-class Soundscape {
-  constructor() {
-    this.context = null;
-    this.master = null;
-    this.compressor = null;
-    this.noiseBuffer = null;
-    this.ambientTimer = 0;
-    this.lastHitTime = -1;
-    this.volume = 0.7;
-    this.muted = false;
-    try {
-      const savedValue = localStorage.getItem("boundary-ashes-volume");
-      const savedVolume = Number(savedValue);
-      if (savedValue !== null && Number.isFinite(savedVolume)) this.volume = clamp(savedVolume, 0, 1);
-      this.muted = localStorage.getItem("boundary-ashes-muted") === "true";
-    } catch (error) {
-      // Storage can be unavailable in privacy-restricted browser contexts.
-    }
-  }
-
-  enable() {
-    if (!this.context) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      this.context = new AudioContext();
-      this.master = this.context.createGain();
-      this.compressor = this.context.createDynamicsCompressor();
-      this.compressor.threshold.value = -20;
-      this.compressor.knee.value = 12;
-      this.compressor.ratio.value = 4.5;
-      this.compressor.attack.value = 0.003;
-      this.compressor.release.value = 0.16;
-      this.master.connect(this.compressor);
-      this.compressor.connect(this.context.destination);
-      this.applyVolume(true);
-    }
-    if (this.context.state === "suspended") this.context.resume();
-  }
-
-  savePreferences() {
-    try {
-      localStorage.setItem("boundary-ashes-volume", this.volume.toFixed(2));
-      localStorage.setItem("boundary-ashes-muted", String(this.muted));
-    } catch (error) {
-      // Audio remains functional even when persistence is blocked.
-    }
-  }
-
-  outputLevel() {
-    return this.muted ? 0 : 0.2 * Math.pow(this.volume, 1.18);
-  }
-
-  applyVolume(immediate = false) {
-    if (!this.context || !this.master) return;
-    const now = this.context.currentTime;
-    const target = this.outputLevel();
-    this.master.gain.cancelScheduledValues(now);
-    if (immediate) this.master.gain.setValueAtTime(target, now);
-    else this.master.gain.setTargetAtTime(target, now, 0.025);
-  }
-
-  setVolume(value) {
-    this.volume = clamp(Number(value) || 0, 0, 1);
-    this.applyVolume();
-    this.savePreferences();
-  }
-
-  setMuted(muted) {
-    this.muted = Boolean(muted);
-    this.applyVolume();
-    this.savePreferences();
-  }
-
-  route(node, pan = 0) {
-    if (typeof this.context.createStereoPanner === "function") {
-      const panner = this.context.createStereoPanner();
-      panner.pan.value = clamp(pan, -1, 1);
-      node.connect(panner);
-      panner.connect(this.master);
-      return;
-    }
-    node.connect(this.master);
-  }
-
-  tone(frequency, duration, type = "sine", volume = 0.18, slide = 0, options = {}) {
-    if (!this.context || !this.master) return;
-    const now = this.context.currentTime + (options.delay || 0);
-    const oscillator = this.context.createOscillator();
-    const gain = this.context.createGain();
-    const attack = Math.min(duration * 0.35, options.attack ?? 0.008);
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(Math.max(30, frequency), now);
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(30, frequency + slide), now + duration);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume), now + attack);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(gain);
-    this.route(gain, options.pan || 0);
-    oscillator.start(now);
-    oscillator.stop(now + duration + 0.02);
-  }
-
-  noiseBurst(duration, volume, frequency, type = "bandpass", options = {}) {
-    if (!this.context || !this.master) return;
-    if (!this.noiseBuffer) {
-      const length = Math.ceil(this.context.sampleRate * 0.45);
-      this.noiseBuffer = this.context.createBuffer(1, length, this.context.sampleRate);
-      const data = this.noiseBuffer.getChannelData(0);
-      for (let i = 0; i < data.length; i += 1) {
-        const envelope = 1 - i / data.length;
-        data[i] = (Math.random() * 2 - 1) * (0.45 + envelope * 0.55);
-      }
-    }
-    const now = this.context.currentTime + (options.delay || 0);
-    const source = this.context.createBufferSource();
-    const filter = this.context.createBiquadFilter();
-    const gain = this.context.createGain();
-    source.buffer = this.noiseBuffer;
-    filter.type = type;
-    filter.frequency.value = frequency;
-    filter.Q.value = options.q ?? 1.15;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.001, volume), now + Math.min(0.004, duration * 0.2));
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    source.connect(filter);
-    filter.connect(gain);
-    this.route(gain, options.pan || 0);
-    source.start(now);
-    source.stop(now + duration + 0.015);
-  }
-
-  shot(charge) {
-    const strength = 0.7 + charge * 0.3;
-    this.tone(1780 + charge * 620, 0.055, "triangle", 0.13 * strength, -960, { attack: 0.001 });
-    this.tone(225 + charge * 58, 0.105, "sine", 0.055 * strength, -72, { attack: 0.002, delay: 0.006 });
-    this.noiseBurst(0.092, 0.05 * strength, 3600 + charge * 1900, "bandpass", { delay: 0.005, q: 0.85 });
-    if (charge > 0.72) this.tone(2850, 0.075, "sine", 0.025 * charge, 520, { attack: 0.002, delay: 0.012 });
-  }
-
-  magic(kind) {
-    if (kind === "light") {
-      this.tone(880, 0.13, "sine", 0.055, 620, { attack: 0.003 });
-      this.tone(1760, 0.09, "sine", 0.025, 320, { attack: 0.002, delay: 0.014 });
-    } else if (kind === "meteor") {
-      this.tone(245, 0.18, "triangle", 0.075, -118, { attack: 0.004 });
-      this.noiseBurst(0.12, 0.04, 720, "lowpass", { delay: 0.012, q: 0.65 });
-    } else if (kind === "breeze") {
-      this.tone(690, 0.18, "sine", 0.05, 390, { attack: 0.009 });
-      this.noiseBurst(0.15, 0.027, 4700, "highpass", { delay: 0.01, q: 0.55 });
-    } else {
-      this.tone(390, 0.15, "triangle", 0.065, -145, { attack: 0.003 });
-      this.tone(790, 0.11, "sine", 0.03, -210, { attack: 0.003, delay: 0.018 });
-    }
-  }
-
-  hit(kind = "normal", amount = 10, enemyType = "wraith", pan = 0) {
-    if (!this.context || !this.master) return;
-    const now = this.context.currentTime;
-    const heavy = amount > 42 || enemyType === "boss" || enemyType === "brute";
-    if (!heavy && now - this.lastHitTime < 0.028) return;
-    this.lastHitTime = now;
-    const strength = clamp(0.45 + amount / 65, 0.48, 1.15);
-
-    if (kind === "meteor") {
-      this.noiseBurst(0.14, 0.095 * strength, 620, "lowpass", { pan, q: 0.65 });
-      this.tone(138, 0.17, "triangle", 0.1 * strength, -64, { attack: 0.002, pan });
-      return;
-    }
-    if (kind === "light") {
-      this.noiseBurst(0.045, 0.038 * strength, 3100, "bandpass", { pan, q: 1.7 });
-      this.tone(1260, 0.075, "sine", 0.07 * strength, 470, { attack: 0.001, pan });
-      return;
-    }
-    if (kind === "breeze") {
-      this.noiseBurst(0.07, 0.035 * strength, 4400, "highpass", { pan, q: 0.7 });
-      this.tone(940, 0.11, "sine", 0.058 * strength, 280, { attack: 0.002, pan });
-      return;
-    }
-    if (kind === "force") {
-      this.noiseBurst(0.065, 0.055 * strength, 1450, "bandpass", { pan, q: 1.05 });
-      this.tone(365, 0.105, "triangle", 0.085 * strength, -160, { attack: 0.001, pan });
-      return;
-    }
-
-    this.noiseBurst(heavy ? 0.075 : 0.048, (heavy ? 0.07 : 0.048) * strength, heavy ? 1050 : 1850, "bandpass", { pan, q: 1.25 });
-    this.tone(heavy ? 620 : 980, heavy ? 0.095 : 0.065, "triangle", (heavy ? 0.09 : 0.07) * strength, heavy ? -310 : -470, { attack: 0.001, pan });
-    this.tone(heavy ? 155 : 210, heavy ? 0.12 : 0.075, "sine", (heavy ? 0.045 : 0.025) * strength, -55, { attack: 0.002, pan });
-  }
-
-  hurt() {
-    this.noiseBurst(0.13, 0.1, 720, "lowpass", { q: 0.65 });
-    this.tone(118, 0.22, "triangle", 0.13, -48, { attack: 0.003 });
-  }
-
-  roll() {
-    this.noiseBurst(0.2, 0.052, 3300, "highpass", { q: 0.5 });
-    this.tone(530, 0.12, "sine", 0.04, -270, { attack: 0.004 });
-  }
-
-  chime() {
-    this.tone(440, 0.42, "sine", 0.11, 220);
-    window.setTimeout(() => this.tone(660, 0.38, "sine", 0.08, 180), 110);
-  }
-
-  shield() {
-    this.tone(310, 0.11, "triangle", 0.055, -120, { attack: 0.002 });
-    this.tone(930, 0.08, "sine", 0.03, -360, { attack: 0.001, delay: 0.012 });
-  }
-
-  preview() {
-    this.enable();
-    this.shot(0.82);
-    window.setTimeout(() => this.hit("normal", 27, "wraith"), 125);
-  }
-}
+const Soundscape = window.BoundarySoundscape;
 
 class Effect {
   constructor(type, x, y, options = {}) {
@@ -1057,7 +844,7 @@ class BossHazard {
     }
     game.shake = Math.max(game.shake, this.type === "outside" ? 13 : 8);
     game.shockwave(this.x, this.y, this.color, this.type === "line" ? 80 : this.radius);
-    game.sound.tone(this.type === "outside" ? 70 : 105, 0.3, "sawtooth", 0.14, -35);
+    game.sound.cue(this.type === "outside" ? "explosion" : "boundary", { ...game.soundPosition(this.x, this.y), gain: 0.55, priority: 3 });
   }
 
   draw(context, elapsed) {
@@ -1147,6 +934,7 @@ class Pickup {
     this.y += this.vy * dt;
     this.phase += dt * 4;
     if (d < game.player.r + 15) {
+      game.sound.cue("pickup", { gain: 0.18, cooldown: 0.1 });
       if (this.kind === "health") game.player.heal(5);
       else game.player.energy = Math.min(game.player.maxEnergy, game.player.energy + 9);
       game.spark(this.x, this.y, this.kind === "health" ? "#ef8890" : COLORS.jade, 8);
@@ -1313,6 +1101,7 @@ class Enemy {
     if (this.type === "wraith") {
       const target = this.seekVelocity(game, 0, Math.sin(this.phase) * 0.12);
       if (target.d < this.r + game.player.r + 8 && this.attackTimer <= 0) {
+        game.sound.creature(this.type, "attack", game.soundPosition(this.x, this.y));
         game.player.hurt(this.outgoingDamage(), target.angle);
         this.attackTimer = 1.15;
         this.vx *= -1.6;
@@ -1321,6 +1110,7 @@ class Enemy {
     } else if (this.type === "archer") {
       const target = this.seekVelocity(game, 330, Math.sin(this.phase) * 0.44);
       if (this.attackTimer <= 0 && target.d < 620) {
+        game.sound.creature(this.type, "attack", game.soundPosition(this.x, this.y));
         game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle, 390, this.outgoingDamage(), "#e38da1", 6));
         game.spark(this.x, this.y, "#e38da1", 4);
         this.attackTimer = 1.65;
@@ -1328,11 +1118,13 @@ class Enemy {
     } else if (this.type === "brute") {
       const target = this.seekVelocity(game, 0, 0);
       if (this.specialTimer <= 0 && target.d > 150 && target.d < 520) {
+        game.sound.creature(this.type, "charge", { ...game.soundPosition(this.x, this.y), gain: 0.44 });
         this.state = "charge";
         this.stateTimer = 1.05;
         this.chargeAngle = target.angle;
         this.specialTimer = 5.2;
       } else if (target.d < this.r + game.player.r + 13 && this.attackTimer <= 0) {
+        game.sound.creature(this.type, "attack", game.soundPosition(this.x, this.y));
         game.player.hurt(this.outgoingDamage(), target.angle);
         game.shockwave(this.x, this.y, "#c88970", 58);
         this.attackTimer = 1.7;
@@ -1340,6 +1132,7 @@ class Enemy {
     } else if (this.type === "sentinel") {
       const target = this.seekVelocity(game, 270, 0.72);
       if (this.attackTimer <= 0) {
+        game.sound.creature(this.type, "attack", game.soundPosition(this.x, this.y));
         for (let i = -1; i <= 1; i += 1) {
           game.enemyProjectiles.push(new EnemyProjectile(this.x, this.y, target.angle + i * 0.18, 315, this.outgoingDamage(), "#ab91dd", 7));
         }
@@ -1585,7 +1378,6 @@ class Enemy {
   }
 
   drawBoss(context) {
-    // Seven calibration blades form the boss's readable outer silhouette.
     context.save();
     context.rotate(this.phase * (this.bossPhase >= 3 ? 0.42 : 0.2));
     context.shadowColor = this.bossPhase >= 3 ? "#ec4d91" : this.color;
@@ -1617,7 +1409,6 @@ class Enemy {
       context.setLineDash([]);
     }
 
-    // Ceremonial body, split porcelain mask and exposed star-map core.
     context.fillStyle = "#15111f";
     polygon(context, [[-30, -30], [0, -43], [30, -30], [43, 20], [18, 48], [0, 37], [-18, 48], [-43, 20]]);
     context.fill();
@@ -1828,7 +1619,7 @@ class SupportRobot {
       this.game.arrows.push(new RobotBolt(this, target, base * this.owner.effectiveDamage()));
       this.attackFlash = 1;
       this.attackTimer = this.config.key === "energy" ? 1.25 : 1.52;
-      this.game.sound.tone(330 + this.configIndex * 75, 0.08, "triangle", 0.035, 95, { pan: clamp((this.x - W / 2) / 700, -1, 1) });
+      this.game.sound.cue("robotShot", { ...this.game.soundPosition(this.x, this.y), gain: 0.18, cooldown: 0.09 });
     }
   }
 
@@ -1849,6 +1640,7 @@ class SupportRobot {
     if (this.dead) return;
     this.dead = true;
     if (!recycled) {
+      this.game.sound.cue("explosion", { ...this.game.soundPosition(this.x, this.y), gain: 0.35, cooldown: 0.12 });
       const damage = 18 * this.owner.robotDamageMod;
       for (const enemy of this.game.enemies) {
         const distance = dist(this, enemy);
@@ -2026,6 +1818,7 @@ class Player {
   constructor(game) {
     this.game = game;
     this.characterId = "xingyao";
+    this.animation = new BoundaryAnimation.CharacterAnimator(this.characterId);
     this.x = W / 2;
     this.y = H / 2;
     this.r = 18;
@@ -2100,7 +1893,7 @@ class Player {
       if (this.rollRecharge >= this.rollRechargeTime) {
         this.rollRecharge -= this.rollRechargeTime;
         this.rollCharges += 1;
-        this.game.sound.tone(520, 0.15, "sine", 0.06, 120);
+        this.game.sound.cue("recharge", { gain: 0.13 });
       }
     } else {
       this.rollRecharge = 0;
@@ -2196,6 +1989,7 @@ class Player {
 
   updateCharge(dt) {
     if (input.mouse.down && this.attackCooldown <= 0) {
+      if (this.charge === 0) this.game.sound.cue("bowDraw", { gain: 0.15, cooldown: 0.3 });
       this.charge = Math.min(1, this.charge + dt * 0.82 * this.effectiveChargeRate());
       if (this.charge >= 1 && Math.random() < dt * 12) {
         const a = rand(TAU);
@@ -2214,6 +2008,7 @@ class Player {
 
   shoot() {
     const charge = this.charge;
+    this.animation.play("shoot", 0.26);
     this.charge = 0;
     this.attackCooldown = this.baseAttackInterval / this.effectiveAttackSpeed();
     const crit = Math.random() < this.critChance;
@@ -2242,9 +2037,10 @@ class Player {
       return;
     }
     this.magicIndex = (this.magicIndex + 1) % MAGIC.length;
+    this.animation.play("cast", 0.42);
     this.game.stats.switches += 1;
     this.game.showToast(`魔法箭 · ${this.currentMagic.name}`);
-    this.game.sound.tone(360 + this.magicIndex * 100, 0.22, "sine", 0.11, 140);
+    this.game.sound.cue("select", { gain: 0.23 });
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 40);
     this.game.pixelBurst(this.x, this.y - 14, this.currentMagic.key, 92, 0.42);
   }
@@ -2252,6 +2048,7 @@ class Player {
   toggleSpirit() {
     if (this.qCooldown > 0) return;
     this.spiritActive = !this.spiritActive;
+    this.animation.play("cast", 0.56);
     this.game.stats.spiritToggles += 1;
     this.qCooldown = this.qCooldownMax;
     if (this.spiritActive) {
@@ -2262,7 +2059,7 @@ class Player {
       this.game.showToast("契灵归弦 · 专精强化");
     }
     this.game.shockwave(this.x, this.y, this.spiritActive ? COLORS.jade : COLORS.gold, 74);
-    this.game.sound.chime();
+    this.game.sound.cue("summon", { gain: 0.35 });
   }
 
   updateSpirit(dt) {
@@ -2283,14 +2080,14 @@ class Player {
       const arrowKind = this.magicUnlocked ? this.currentMagic.key : "normal";
       this.game.arrows.push(new Arrow(this.spiritX, this.spiritY, angle, damage, arrowKind, "spirit", 0.55));
       this.spiritShotTimer = 2.05;
-      if (this.magicUnlocked) this.game.sound.magic(this.currentMagic.key);
-      else this.game.sound.shot(0.35);
+      if (this.magicUnlocked) this.game.sound.magic(this.currentMagic.key, { ...this.game.soundPosition(this.spiritX, this.spiritY), gain: 0.12 });
+      else this.game.sound.shot(0.35, { ...this.game.soundPosition(this.spiritX, this.spiritY), group: "spiritBow", gain: 0.19 });
     }
     if (target && this.spiritForceTimer <= 0) {
       const angle = Math.atan2(target.y - this.spiritY, target.x - this.spiritX);
       this.game.arrows.push(new Arrow(this.spiritX, this.spiritY, angle, 11 * this.effectiveDamage(), "force", "spirit", 0.65));
       this.spiritForceTimer = 5.4;
-      this.game.sound.magic("force");
+      this.game.sound.magic("force", { ...this.game.soundPosition(this.spiritX, this.spiritY), gain: 0.17 });
     }
   }
 
@@ -2316,11 +2113,12 @@ class Player {
     }
     this.rollDir = { x: dx, y: dy };
     this.rollTimer = 0.43;
+    this.charge = 0;
+    this.animation.play("roll", 0.43);
     this.rollVolley = false;
     this.rollCharges -= 1;
     this.game.stats.rollUses += 1;
     this.invulnerable = 0.48;
-    this.charge = 0;
     this.game.sound.roll();
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 36);
     this.game.pixelBurst(this.x, this.y, "dodge", 118, 0.36, Math.atan2(this.rollDir.y, this.rollDir.x));
@@ -2353,12 +2151,13 @@ class Player {
     }
     if (this.danceCooldown > 0 || this.dancing || this.energy < 24) return;
     this.danceTimer = this.danceDuration;
+    this.animation.play("cast", 0.65);
     this.game.stats.danceUses += 1;
     this.danceCooldown = this.danceCooldownMax;
     this.game.showToast("灵舞 · 星轨展开");
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 130);
     this.game.pixelBurst(this.x, this.y - 18, "enhance", 180, 0.62);
-    this.game.sound.tone(220, 0.5, "sine", 0.14, 440);
+    this.game.sound.cue("dance", { gain: 0.48, priority: 3 });
   }
 
   endDance() {
@@ -2401,6 +2200,10 @@ class Player {
   drawPixelModel(context, alpha) {
     if (!atlasLoaded(pixelAtlases.entity)) return false;
     drawPixelShadow(context, this.x - 2, this.y + 19, 46, 0.42);
+    if (BoundaryAnimation.draw(context, this, alpha)) {
+      if (this.spiritActive) this.drawSpirit(context);
+      return true;
+    }
     context.save();
     context.globalAlpha = alpha;
     context.translate(pixel(this.x), pixel(this.y));
@@ -2458,7 +2261,6 @@ class Player {
       context.globalAlpha = alpha;
     }
 
-    // Quiver and long elven hair trail behind her movement direction.
     context.save();
     context.rotate(-0.16);
     context.fillStyle = "#7e6042";
@@ -2481,7 +2283,6 @@ class Player {
     polygon(context, [[-8, -9], [-30, -15], [-20, -2], [-35, 13], [-7, 12], [8, 3]]);
     context.fill();
 
-    // Layered archer coat with ivory mantle and jade-gold seams.
     context.fillStyle = "#1c3339";
     polygon(context, [[-18, -18], [9, -17], [18, -7], [17, 13], [-10, 22], [-25, 10], [-24, -8]]);
     context.fill();
@@ -2506,7 +2307,6 @@ class Player {
     context.fill();
     context.shadowBlur = 0;
 
-    // Pointed ears remain readable even at gameplay scale.
     context.fillStyle = "#d8bca8";
     polygon(context, [[2, -8], [-7, -25], [10, -10]]);
     context.fill();
@@ -2545,7 +2345,6 @@ class Player {
     context.fillRect(13, -4, 2.5, 2);
     context.fillRect(13, 2, 2.5, 2);
 
-    // Bracer, hand and recurved bow.
     context.strokeStyle = "#725842";
     context.lineWidth = 6;
     context.beginPath();
@@ -2614,6 +2413,7 @@ class EngineerPlayer extends Player {
   constructor(game) {
     super(game);
     this.characterId = "wenyu";
+    this.animation = new BoundaryAnimation.CharacterAnimator(this.characterId);
     this.r = 19;
     this.maxHp = 82;
     this.hp = this.maxHp;
@@ -2695,7 +2495,7 @@ class EngineerPlayer extends Player {
       if (this.rollRecharge >= this.rollRechargeTime) {
         this.rollRecharge -= this.rollRechargeTime;
         this.rollCharges += 1;
-        this.game.sound.tone(470, 0.12, "triangle", 0.045, 130);
+        this.game.sound.cue("recharge", { gain: 0.13 });
       }
     } else {
       this.rollRecharge = 0;
@@ -2747,6 +2547,7 @@ class EngineerPlayer extends Player {
 
   shoot() {
     this.attackCooldown = this.baseAttackInterval / this.effectiveAttackSpeed();
+    this.animation.play("shoot", Math.min(0.34, this.attackCooldown));
     const muzzleX = this.x + Math.cos(this.facing) * (this.dancing ? 31 : 23);
     const muzzleY = this.y + Math.sin(this.facing) * (this.dancing ? 31 : 23);
     const crit = Math.random() < this.critChance;
@@ -2755,22 +2556,24 @@ class EngineerPlayer extends Player {
     this.game.arrows.push(new Arrow(muzzleX, muzzleY, this.facing - spread, damage, "tech", "player", 0.5));
     if (this.dancing) this.game.arrows.push(new Arrow(muzzleX, muzzleY, this.facing + spread, damage * 0.84, "tech", "player", 0.5));
     this.game.stats.shots += 1;
-    this.game.sound.tone(this.dancing ? 190 : 245, 0.09, "square", 0.045, 180, { pan: clamp((this.x - W / 2) / 700, -1, 1) });
+    this.game.sound.cue("techShot", { gain: this.dancing ? 0.55 : 0.4, priority: 3 });
     if (crit) this.game.floatText(this.x, this.y - 32, "校准", this.currentMagic.color, 13);
   }
 
   toggleSpirit() {
     if (this.qCooldown > 0) return;
     this.configIndex = (this.configIndex + 1) % ROBOT_CONFIGS.length;
+    this.animation.play("cast", 0.4);
     this.qCooldown = this.qCooldownMax;
     this.game.stats.switches += 1;
     this.game.showToast(`制造配置 · ${this.currentMagic.name}`);
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 52);
-    this.game.sound.tone(330 + this.configIndex * 75, 0.18, "triangle", 0.075, 120);
+    this.game.sound.cue("select", { gain: 0.23 });
   }
 
   switchMagic() {
     this.bindingMode = !this.bindingMode;
+    this.animation.play("cast", 0.48);
     input.mouse.down = false;
     this.game.showToast(this.bindingMode ? "批量绑定模式 · 点击机器人切换绑定" : "绑定指定结束");
     this.game.shockwave(this.x, this.y, this.currentMagic.color, 66);
@@ -2789,6 +2592,7 @@ class EngineerPlayer extends Player {
       return true;
     }
     nearest.bound = !nearest.bound;
+    this.animation.play("cast", 0.5);
     this.game.stats.bindings += 1;
     this.game.showToast(`${nearest.config.name} · ${nearest.bound ? "已绑定程闻屿" : "解除绑定"}`);
     this.game.shockwave(nearest.x, nearest.y, nearest.config.color, 42);
@@ -2808,13 +2612,14 @@ class EngineerPlayer extends Player {
     }
     if (!target) target = this.robots.reduce((closest, robot) => dist(robot, this) < dist(closest, this) ? robot : closest, this.robots[0]);
     target.configIndex = this.configIndex;
+    this.animation.play("repair", 0.58);
     target.repair(target.maxDurability * 0.46);
     target.energy = Math.min(target.maxEnergy, target.energy + 12);
     this.rollCharges -= 1;
     this.game.stats.rollUses += 1;
     this.game.showToast(`重设完成 · ${target.config.name} · 耐久修复`);
     this.game.shockwave(target.x, target.y, target.config.color, 78);
-    this.game.sound.chime();
+    this.game.sound.cue("repair", { gain: 0.38 });
   }
 
   startDance() {
@@ -2836,9 +2641,10 @@ class EngineerPlayer extends Player {
     this.bindingMode = false;
     this.game.stats.danceUses += 1;
     this.game.showToast(`归恒机甲展开 · 回收能量 ${Math.round(recovered)}`);
+    this.animation.play("cast", 0.7);
     this.game.shockwave(this.x, this.y, "#63d8d0", 145);
     this.game.pixelBurst(this.x, this.y - 18, "construct", 190, 0.68);
-    this.game.sound.tone(115, 0.55, "sawtooth", 0.12, 390);
+    this.game.sound.cue("mech", { gain: 0.65, priority: 3 });
   }
 
   endDance() {
@@ -2857,7 +2663,7 @@ class EngineerPlayer extends Player {
     this.game.showToast(`自动制造 · ${robot.config.name}机器人 #${this.manufacturedCount}`);
     this.game.shockwave(robot.x, robot.y, robot.config.color, 66);
     this.game.pixelBurst(robot.x, robot.y, "construct", 108, 0.52);
-    this.game.sound.chime();
+    this.game.sound.cue("repair", { ...this.game.soundPosition(robot.x, robot.y), gain: 0.28 });
   }
 
   onRoomEnter() {
@@ -2901,6 +2707,7 @@ class EngineerPlayer extends Player {
     const alpha = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0 ? 0.48 : 1;
     if (atlasLoaded(pixelAtlases.entity)) {
       drawPixelShadow(context, this.x - 2, this.y + 20, this.dancing ? 62 : 48, 0.42);
+      if (BoundaryAnimation.draw(context, this, alpha)) return;
       context.save();
       context.globalAlpha = alpha;
       context.translate(pixel(this.x), pixel(this.y));
@@ -2982,8 +2789,6 @@ class EngineerPlayer extends Player {
       context.fill();
     }
 
-    // Fluffy hair, soft face and small side-tie keep the engineer readable as
-    // a cute adult androgynous boy even at combat scale.
     context.fillStyle = "#101923";
     context.beginPath();
     context.ellipse(2, -12, 8, 5, -0.35, 0, TAU);
@@ -3279,7 +3084,6 @@ class Game {
       const savedCharacter = localStorage.getItem("boundary-ashes-character");
       if (CHARACTER_PROFILES[savedCharacter]) this.selectedCharacter = savedCharacter;
     } catch (error) {
-      // Character choice remains available when local storage is restricted.
     }
     this.state = "title";
     this.mode = "run";
@@ -3329,6 +3133,11 @@ class Game {
     return this.selectedCharacter === "wenyu" ? new EngineerPlayer(this) : new Player(this);
   }
 
+  soundPosition(x, y) {
+    const listener = this.player || { x: W / 2, y: H / 2 };
+    return { pan: clamp((x - listener.x) / 620, -0.85, 0.85), distance: Math.hypot(x - listener.x, y - listener.y) };
+  }
+
   selectCharacter(characterId, announce = true) {
     if (!CHARACTER_PROFILES[characterId]) return;
     this.selectedCharacter = characterId;
@@ -3349,7 +3158,7 @@ class Game {
     if (engineerPortrait) engineerPortrait.setAttribute("aria-hidden", characterId === "wenyu" ? "false" : "true");
     if (engineerHero) engineerHero.setAttribute("aria-hidden", "true");
     try { localStorage.setItem("boundary-ashes-character", characterId); } catch (error) {}
-    if (announce) this.sound.tone(characterId === "wenyu" ? 285 : 410, 0.2, "triangle", 0.07, 120);
+    if (announce) this.sound.cue("select", { gain: 0.23, ui: true });
   }
 
   reset(mode = "run") {
@@ -3575,7 +3384,7 @@ class Game {
     this.state = "bossIntro";
     input.mouse.down = false;
     this.setScreen(bossIntroScreen, true);
-    this.sound.tone(72, 0.8, "sawtooth", 0.12, -18);
+    this.sound.cue("bossIntro", { gain: 0.65, priority: 4, ui: true });
   }
 
   closeBossIntro() {
@@ -3590,7 +3399,7 @@ class Game {
     this.bossSkillName = name;
     this.bossSkillDetail = detail;
     this.bossSkillTimer = duration;
-    this.sound.tone(135, 0.32, "triangle", 0.1, 75);
+    this.sound.cue("bossWarning", { gain: 0.44, priority: 4 });
   }
 
   spawnBossAnchors(boss) {
@@ -3771,7 +3580,6 @@ class Game {
       if (safe.length > 0) return safe[Math.floor(this.rng() * safe.length)];
     }
 
-    // Keep obstacle safety mandatory even if a future room packs in far more entities.
     let best = null;
     let bestScore = -Infinity;
     for (let y = ARENA.top + radius + 16; y <= ARENA.bottom - radius - 16; y += 28) {
@@ -3844,6 +3652,13 @@ class Game {
       this.syncSoundSettingsUI();
       this.sound.preview();
     });
+    for (const [id, category] of [["creature-preview-button", "creatures"], ["skill-preview-button", "skills"]]) {
+      document.getElementById(id).addEventListener("click", () => {
+        if (this.sound.muted) this.sound.setMuted(false);
+        this.syncSoundSettingsUI();
+        this.sound.preview(category);
+      });
+    }
     document.getElementById("bestiary-close").addEventListener("click", () => this.closeBestiary());
     document.getElementById("boss-intro-continue").addEventListener("click", () => this.closeBossIntro());
     document.getElementById("restart-button").addEventListener("click", () => this.start());
@@ -3851,8 +3666,18 @@ class Game {
     tutorialSkip.addEventListener("click", () => this.start());
     window.addEventListener("blur", () => {
       input.keys.clear();
+      input.pressed.clear();
       input.mouse.down = false;
+      input.mouse.released = false;
+      if (this.player) this.player.charge = 0;
+      this.sound.setScene(false, this.currentFloor);
       if (this.state === "playing") this.togglePause();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        this.sound.setScene(false, this.currentFloor);
+        if (this.state === "playing") this.togglePause();
+      }
     });
   }
 
@@ -3872,6 +3697,8 @@ class Game {
     if (this.state === "playing") {
       this.state = "paused";
       input.mouse.down = false;
+      input.mouse.released = false;
+      this.player.charge = 0;
       this.setScreen(pauseScreen, true);
     } else if (this.state === "paused") {
       this.state = "playing";
@@ -3888,6 +3715,7 @@ class Game {
   loop(now) {
     const dt = Math.min(0.033, Math.max(0, (now - this.lastTime) / 1000));
     this.lastTime = now;
+    this.sound.setScene(this.state === "playing", this.currentFloor);
     if (this.state === "playing") this.update(dt);
     else this.updateAmbient(dt);
     this.render();
@@ -3910,7 +3738,18 @@ class Game {
     if (input.pressed.has("Space")) this.player.startRoll();
     if (input.pressed.has("KeyR")) this.player.startDance();
 
+    const previousX = this.player.x;
+    const previousY = this.player.y;
+    const wasRolling = this.player.rollTimer > 0;
     this.player.update(dt);
+    const footstep = this.player.animation.update(dt, {
+      distance: Math.hypot(this.player.x - previousX, this.player.y - previousY),
+      charge: this.player.charge,
+      rolling: wasRolling,
+      rollProgress: 1 - Math.max(0, this.player.rollTimer) / 0.43,
+      binding: this.player.bindingMode,
+    });
+    if (footstep) this.sound.step(this.player.characterId);
     this.checkDoorTransition();
     this.updateRoomMechanisms(dt);
     for (const enemy of this.enemies) enemy.update(dt, this);
@@ -3961,6 +3800,7 @@ class Game {
           ? "warning"
           : "idle";
       if (mechanism.state === "active" && previous !== "active") {
+        this.sound.cue(mechanism.type === "ember" ? "meteor" : mechanism.type === "coil" ? "tech" : "metal", { ...this.soundPosition(mechanism.x, mechanism.y), gain: 0.26, cooldown: 0.15 });
         const kind = mechanism.type === "ember" ? "meteor" : mechanism.type === "coil" ? "tech" : mechanism.type === "blade" ? "boundary" : "warning";
         this.effects.push(new Effect("pixelBurst", mechanism.x, mechanism.y - 6, { kind, size: mechanism.r * 2.4, life: 0.34 }));
       }
@@ -4059,8 +3899,6 @@ class Game {
     };
     if (isClear(actor)) return;
 
-    // If an obstacle sits near a wall, a direct push can aim into that wall and
-    // be cancelled by arena clamping. Search the nearest complete free circle instead.
     const inwardAngle = Math.atan2(H / 2 - origin.y, W / 2 - origin.x);
     for (let searchRadius = 12; searchRadius <= 180; searchRadius += 12) {
       for (let i = 0; i < 24; i += 1) {
@@ -4141,8 +3979,9 @@ class Game {
     enemy.hp -= amount;
     enemy.hitFlash = 1;
     if (!silent) {
-      const pan = clamp((enemy.x - W / 2) / (W * 0.45), -1, 1);
-      this.sound.hit(kind, amount, enemy.type, pan);
+      const position = this.soundPosition(enemy.x, enemy.y);
+      this.sound.hit(kind, amount, enemy.type, position.pan, position.distance);
+      if (enemy.hp > 0) this.sound.creature(enemy.type, "hurt", { ...position, gain: 0.16 });
       this.floatText(enemy.x, enemy.y - enemy.r - 8, `${Math.ceil(amount)}`, kind === "normal" ? COLORS.gold : kind === "tether" ? COLORS.force : "#d9f5ee", amount > 50 ? 17 : 13);
       this.spark(enemy.x, enemy.y, kind === "normal" ? COLORS.gold : kind === "force" ? COLORS.force : "#beded9", amount > 50 ? 10 : 5);
       this.pixelBurst(enemy.x, enemy.y - enemy.r * 0.18, kind === "tether" ? "force" : kind, amount > 50 ? 112 : 78, 0.3, angle);
@@ -4162,6 +4001,7 @@ class Game {
     if (enemy.dead) return;
     enemy.dead = true;
     this.stats.kills += 1;
+    this.sound.creature(enemy.type, "death", this.soundPosition(enemy.x, enemy.y));
     this.shake = Math.max(this.shake, enemy.type === "boss" ? 18 : 4);
     this.spark(enemy.x, enemy.y, enemy.color, enemy.type === "boss" ? 42 : 15);
     this.shockwave(enemy.x, enemy.y, enemy.color, enemy.r * 1.8);
@@ -4186,7 +4026,7 @@ class Game {
     this.spark(x, y, "#ffb072", 22);
     this.pixelBurst(x, y, "meteor", Math.min(230, radius * 1.65), 0.52);
     this.shake = Math.max(this.shake, 8);
-    this.sound.tone(90, 0.26, "sawtooth", 0.16, -42);
+    this.sound.cue("explosion", { ...this.soundPosition(x, y), gain: 0.6, priority: 3, cooldown: 0.1 });
     for (const enemy of this.enemies) {
       const d = Math.hypot(enemy.x - x, enemy.y - y);
       if (d > radius + enemy.r) continue;
@@ -4269,6 +4109,7 @@ class Game {
     this.player.charge = 0;
     this.player.attackCooldown = 0;
     this.player.rollTimer = 0;
+    this.player.animation.reset();
     this.player.danceTimer = 0;
     this.player.invulnerable = 1.25;
     this.player.heal(this.player.maxHp * 0.3);
@@ -4278,7 +4119,7 @@ class Game {
     this.floorBannerTimer = 3.4;
     this.pendingFloorReward = true;
     this.showToast(`进入第 ${this.currentFloor} 层 · ${this.floorConfig.name}`);
-    this.sound.tone(96, 0.75, "triangle", 0.14, 170);
+    this.sound.cue("summon", { gain: 0.5 });
   }
 
   offerUpgrade() {
@@ -4371,6 +4212,7 @@ class Game {
 
   defeat() {
     if (this.state !== "playing") return;
+    this.sound.cue("defeat", { gain: 0.42, ui: true, priority: 4 });
     this.state = "ended";
     input.mouse.down = false;
     document.getElementById("end-eyebrow").textContent = "JOURNEY ENDED";
@@ -4494,8 +4336,6 @@ class Game {
   }
 
   setupTutorial() {
-    // Each character gets a controlled full-kit showcase. Formal runs retain
-    // their own unlock rules and lower starting resources.
     if (this.player.characterId === "wenyu") {
       this.player.configIndex = 0;
       this.player.bindingMode = false;
@@ -4618,7 +4458,7 @@ class Game {
     }
 
     this.renderTutorialDialog();
-    if (index > 0 && !step.final) this.sound.tone(390 + index * 18, 0.16, "sine", 0.055, 80);
+    if (index > 0 && !step.final) this.sound.cue("select", { gain: 0.14, ui: true });
   }
 
   spawnTutorialTargets(count) {
@@ -5603,5 +5443,7 @@ if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
     debugProbe.dataset.mechanisms = String(game.currentRoom?.mechanisms?.length ?? 0);
     debugProbe.dataset.activeMechanisms = String(game.currentRoom?.mechanisms?.filter((mechanism) => mechanism.state === "active").length ?? 0);
     debugProbe.dataset.pixelAssetsReady = String(Object.values(pixelAtlases).every(atlasLoaded));
+    debugProbe.dataset.animation = player?.animation.snapshot.state || "idle";
+    debugProbe.dataset.animationFrame = String(player?.animation.snapshot.frame ?? 0);
   }, 80);
 }

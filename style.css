@@ -1213,6 +1213,7 @@ kbd {
 
 .settings-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 22px;
@@ -1238,7 +1239,7 @@ kbd {
 }
 
 .sound-preview {
-  min-width: 170px;
+  min-width: 140px;
   padding: 12px 22px;
   font-size: 12px;
 }

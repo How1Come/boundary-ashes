@@ -173,7 +173,6 @@ function clearRegion(pixels, x, y, regionWidth, regionHeight) {
 
 function makeOverlay(index) {
   const pixels = Buffer.alloc(width * height * 4);
-  // Include both endpoints so the final encoded frame is visually identical to the first.
   const phase = index / (frameCount - 1);
   const turn = phase * Math.PI * 2;
   const breath = (wave(phase, 1, -Math.PI / 2) + 1) / 2;
@@ -236,7 +235,6 @@ function makeOverlay(index) {
     });
   });
 
-  // Never paint animated effects over the face; the identity remains pixel-locked.
   clearRegion(pixels, 278, 135, 170, 155);
   return encodePng(pixels);
 }

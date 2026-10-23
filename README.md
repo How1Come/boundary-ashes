@@ -1,69 +1,144 @@
-# 界标余烬
+# Boundary Ashes · 界标余烬
 
-一款零依赖、使用 HTML5 Canvas 绘制的 2D 平面 roguelike 地牢闯关游戏。当前可选界标射手「黎星遥」与归恒机巧师「程闻屿」。
+A single-player 2D pixel-art dungeon roguelike by [How1Come](https://github.com/How1Come), built with vanilla JavaScript, HTML5 Canvas, and Web Audio.
 
-## 运行
+This repository is the standalone browser game. It does not depend on the separate `nomotropy-xigaloth` framework. The game interface is in Chinese.
+
+## Play locally
+
+You need Python 3 to serve the game. Node.js 18 or newer and npm are used for the convenience commands, asset tools, and automated checks; this checkpoint was verified with Node.js 22.17.1. No npm dependencies are required to play or run the normal build.
+
+From the repository root:
 
 ```bash
 npm start
 ```
 
-浏览器打开 `http://localhost:5173`。
+Open [localhost:5173](http://localhost:5173). Choose a character, then select the tutorial or a dungeon run. Click once to enable browser audio.
 
-## 黎星遥操作
+Without Node.js:
 
-- `WASD`：移动
-- 鼠标：瞄准
-- 按住左键：蓄力，松开射击
-- `Q`：召唤 / 回收契灵
-- `E`：解锁后依次切换流光、陨星、清风
-- `Space`：解锁后向移动方向翻滚并自动齐射
-- `R`：解锁后进入灵舞状态
-- `Esc`：暂停
+```bash
+python3 -m http.server 5173
+```
 
-## 程闻屿操作
+If port 5173 is occupied, use `python3 -m http.server 5174` and open port 5174 instead. Serve the files over HTTP; opening `index.html` directly does not reliably load the audio bank.
 
-- `WASD`：移动
-- 鼠标：瞄准；绑定模式下选择机器人
-- 按住左键：按固定攻击冷却连续发射脉冲
-- `Q`：依次切换治疗、能量、控制、强化制造配置
-- `E`：进入 / 退出批量绑定状态
-- `Space`：把所选或最近的机器人重设为当前配置并修复，最多储存 3 次
-- `R`：回收全部机器人并进入短续航机甲形态
-- `Esc`：暂停
+## Current gameplay
 
-局内战斗使用原创像素图集与 Canvas 确定性逻辑组合渲染；黎星遥和程闻屿的标题页循环立绘仍作为独立宣传层保留。运行时不请求外部美术资源。
+- **Two characters:** Li Xingyao (黎星遥), an elf archer with charge shots and a spirit companion; Cheng Wenyu (程闻屿), an engineer with configurable support robots and a temporary mech form.
+- **Character tutorials:** a dedicated training room for each hero, with Tianyi (天意) dialogue, highlighted targets, and action-based progression.
+- **Three dungeon floors:** seeded room topology, six reusable obstacle layouts, a fully visible minimap, and a marked boss room.
+- **Four upgrade rarities:** white, blue, purple, and gold, with weighted appearances, stronger effects, and animated high-rarity cards.
+- **Active room hazards:** spikes, ember vents, arcane coils, and spinning blades with warning states and collision-safe spawn areas.
+- **A boss encounter:** Eheng (厄衡), with protective anchors, telegraphed line attacks, falling marks, star rings, and gathering attacks.
+- **A monster encyclopedia:** enemy behavior, threat information, and boss counterplay.
+- **Pixel character actions:** movement, attacks, casting, archer dodge rolls, and engineer repairs, with animation timing separated from combat resolution.
+- **Layered combat audio:** weapon release, material impacts, monsters, footsteps, skills, hazards, and boss cues, with volume controls and three audition groups.
 
-## 当前内容
+| Floor | Name | Rooms |
+| --- | --- | ---: |
+| 1 | 沉落遗迹 | 8 |
+| 2 | 逆星回廊 | 9 |
+| 3 | 失序深庭 | 10 |
 
-- 标题页先选择角色，再进入正式地牢或该角色的单房间新手关卡
-- 引导者「天意」通过专属对话框、抽象界眼头像、按键提示与场景高亮逐步教学
-- 黎星遥引导会实际验证移动、蓄力攻击、三种魔法箭、契灵、翻滚齐射与灵舞
-- 程闻屿引导会实际验证移动、固定频率脉冲、配置切换、自动制造、自主攻击、绑定、重设修复与机甲回收
-- 每局连续生成三层地牢：沉落遗迹 8 房、逆星回廊 9 房、失序深庭 10 房
-- 拓扑生成器会先建立无捷径主路径，再附着支路，保证首领房位于足够深的位置且全部房间连通
-- 每层默认显示完整拓扑并标记首领房；层间保留已解锁技能、星痕 Buff 与战斗统计
-- 三层分别提高精英房、障碍密度、敌人数量与等级，并使用不同场景色调
-- 每层拥有固定不漂移的像素地表；普通与精英房会在 6 套预制墙体、障碍、摆设组合中按房间种子稳定切换
-- 裂柱、木箱、陶罐、断墙参与实体碰撞并按脚底 Y 轴正确遮挡角色；四门通道和中央出生区由布局验证强制留空
-- 地刺、熔火喷口、奥术线圈与旋刃机关带有待机、预警、启动状态，清房后自动停机
-- 标题页与暂停菜单均可打开「深界怪物图鉴」，查阅四类敌人与首领的威胁等级、行为和应对方式
-- 首领「失序司界 · 厄衡」拥有专属立绘、战斗建模、登场界面与三阶段机制
-- 厄衡投影、逆星映身与最终本体分别维持 3 / 5 / 7 枚界锚，生命、伤害与弹幕压力逐层提高
-- 厄衡会施放界线裁决、坠界印、失序星环与归界收束；界锚存续时免疫伤害
-- 流光、陨星、清风、万斥、界缚、契灵、翻滚齐射与灵舞完整战斗机制
-- 正式地牢以普通攻击和 Q 契灵开局，三相魔法箭、翻滚齐射与灵舞需要从升级界律中逐步解锁
-- 程闻屿采用柔软可爱的成年中性少年视觉，拥有独立制造能量、四种机器人配置、持续绑定补给、自动远程控制、三次重设储存与回收机甲机制
-- 两名英雄、四种机器人、四类普通怪、界锚、训练傀儡与厄衡双阶段均使用独立的俯视像素建模
-- 治疗、能量、控制与强化机器人拥有四套独立局内像素建模、机体动效、耐久/能量环和配置专属弹体
-- 程闻屿拥有独立的白、蓝、紫、金升级池，可强化制造速率、脉冲攻速、机器人耐久与四类配置收益
-- 进一步压低为 72 点生命、52 点能量与 9–32 点基础蓄力伤害，基础攻击间隔固定为 0.86 秒
-- 10 种随机星痕拥有白、蓝、紫、金四档稀有度（57% / 28% / 12% / 3%），高品阶提供更强数值与动态卡框
-- 能量与生命掉落、完整小地图、胜负结算
-- 重新设计的自然系精灵射手立绘，以轻量叶片、藤蔓与花瓣战装强化精灵特征和灵活动势
-- 32 张相位关键帧组成 4 秒、60 FPS、240 帧无声循环立绘动画，标题页与 HUD 头像共用同一套素材
-- 动画使用单张原始立绘作为完全锁定的底层；脸、五官、躯干、四肢、持弓姿势与轮廓不做逐帧重绘或位移，仅发尾、发丝、衣服自由边缘和契灵光效在独立透明层中循环运动
-- 程闻屿使用“配置重设网络”施法瞬间作为动漫全身母版，标题页与 HUD 共用；人物主体保持锁定，长发、衣缘、四台小型机器人的浮动轨道与四色技能光效已为后续 16 帧循环预留空间
-- 程闻屿立绘已输出为 720×1440、4 秒、60 FPS 的无声 MP4 循环；16 张相位帧中人物主体逐像素锁定，四台机器人错相上下浮动，掌心阵、四色网络丝、核心光晕与粒子独立循环
-- 物理命中、三种魔法箭、界缚、工程脉冲、治疗/回能、闪避、制造与四种 Boss 技能共 16 类像素特效
-- 关闭 Canvas 插值、使用整数像素落点与最近邻缩放，保留清晰轮廓、箭矢轨迹、动态光照和 Web Audio 音效
+## Controls
+
+| Input | Li Xingyao · 黎星遥 | Cheng Wenyu · 程闻屿 |
+| --- | --- | --- |
+| WASD | Move | Move |
+| Mouse | Aim | Aim or select robots in binding mode |
+| Left mouse | Hold to charge; release to fire | Hold for cooldown-limited pulse fire |
+| Q | Summon or recall the spirit | Cycle the next robot's configuration |
+| E | Cycle light, meteor, and breeze arrows | Enter or leave robot binding mode |
+| Space | Directional dodge roll and volley | Reconfigure and repair a selected or nearby robot |
+| R | Activate spirit dance | Recall robots and enter mech form |
+| Esc | Pause or resume | Pause or resume |
+
+Li Xingyao starts a normal run with basic attacks and Q. Magic-arrow switching, dodge volleys, and spirit dance must be unlocked through upgrades. Her tutorial exposes the full kit for training. Cheng Wenyu starts with his robot configuration, binding, repair, and mech mechanics available.
+
+## Art and animation
+
+Combat assets are pixel art; title-screen portraits are a separate illustrated presentation layer. All runtime assets are served locally.
+
+| Asset directory | Contents |
+| --- | --- |
+| `assets/runtime/pixel-v1/` | Dungeon floors, props, enemies, bosses, robots, and effects |
+| `assets/runtime/hero-actions-v1/` | Two 32-frame action sheets, frame metadata, and generation prompts |
+| `assets/runtime/audio-v2/` | Pre-rendered sound bank and sample index |
+| `assets/li-xingyao-animation-v5/` | Archer portrait reference frame and authoring references |
+| `assets/cheng-wenyu-animation-v2/` | Engineer portrait master, phase frames, and authoring references |
+| `output/hero-actions/` | Transparent source sheets needed to repack combat animations |
+
+Combat action sheets use 96×96 RGBA cells with a shared foot pivot and default 2× rendering. Movement advances through eight frames based on actual distance, so collision-blocked movement does not keep walking. Attacks and skills use their own playback states without changing damage, attack cooldowns, or roll invulnerability.
+
+Both portrait loops are four-second, 60 FPS silent videos. Their body layers remain fixed while hair ends, clothing edges, companion robots, and effects animate.
+
+## Audio
+
+The sound system contains 45 sound types with three variants each. The approximately 4.8 MiB PCM bank loads from the menu; cached samples avoid first-use synthesis during normal combat. Procedural synthesis remains a fallback when the bank cannot load.
+
+The mix includes distance attenuation, stereo positioning, short room reverb, voice prioritization, and a 28-voice scheduling budget. Pausing or leaving the window silences the combat bus. Settings previews use a separate bus. Volume and mute preferences persist in browser storage.
+
+Open settings to audition combat, monsters, or skills. The [nine-second audio sampler](output/audio-v2/preview.wav) provides a dry comparison without the game's spatial mix. These sounds are original layered synthesis, not studio-recorded foley.
+
+## Development commands
+
+| Command | Result |
+| --- | --- |
+| `npm start` | Serve the game on port 5173 |
+| `npm run check` | Check JavaScript syntax |
+| `npm run test:gameplay` | Check 3,600 seeded floor configurations, layouts, obstacle spacing, and atlas indices |
+| `npm run test:presentation` | Check game-input animation hooks, transparency, audio-bank samples, mute/pause routing, and voice limits |
+| `npm run audio:build` | Rebuild the PCM bank and local audio sampler |
+| `npm run build` | Copy the runtime files into `dist/client/` and the optional Worker into `dist/server/` |
+| `npm run verify` | Run syntax, gameplay, presentation, build, and built-route checks |
+
+After changing the sound design in `src/soundscape.js`:
+
+```bash
+npm run audio:build
+npm run verify
+```
+
+To repack character action sheets, install the authoring-only PNG package and run the packer:
+
+```bash
+npm install --no-save --package-lock=false pngjs
+node scripts/pack-hero-actions.mjs
+npm run verify
+```
+
+An existing tooling installation can be selected with `DUNGEON_TOOLING_PACKAGE`, set to its absolute `package.json` path. Repacking reads the two source images in `output/hero-actions/` and writes the runtime sheets and manifest.
+
+Portrait rebuilding requires FFmpeg on the command path:
+
+```bash
+npm run portrait:v5
+npm run portrait:wenyu:v2
+```
+
+The archer's source is `assets/li-xingyao-animation-v4/keyframe-01.png`; the engineer's source is `assets/cheng-wenyu-animation-v2/master.png`.
+
+## Source layout
+
+| Path | Responsibility |
+| --- | --- |
+| `src/game.js` | Combat, characters, enemies, tutorials, upgrades, input, and rendering |
+| `src/dungeon-generator.js` | Seeded floor topology |
+| `src/room-layouts.js` | Room layouts, obstacles, and placement validation |
+| `src/character-animation.js` | Combat animation states and action-sheet rendering |
+| `src/soundscape.js` | Sound design, sample playback, and mixing |
+| `index.html`, `style.css` | Menus, HUD, tutorials, settings, and visual styling |
+| `scripts/` | Asset generation, packaging, and verification |
+| `worker/index.js` | Optional static-asset serving adapter |
+
+The normal game needs only a static HTTP server. The Worker adapter and existing hosting configuration are not required for local play. `npm run build` prepares files; it does not publish a website.
+
+## Current limits
+
+- Desktop keyboard and mouse controls are implemented; touch controls are not.
+- Character directions use horizontal mirroring, not independent four-direction animation sheets.
+- Robot binding targets the engineer in the current single-player implementation.
+- Browser storage retains preferences and character selection, not an in-progress dungeon save.
+- Automated checks do not replace browser playtesting, visual review, or listening tests.

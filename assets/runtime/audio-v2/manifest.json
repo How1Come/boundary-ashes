@@ -1,0 +1,547 @@
+{
+  "version": "audio-v2",
+  "sampleRate": 32000,
+  "format": "s16le",
+  "samples": {
+    "bow:0": {
+      "offset": 0,
+      "length": 10240
+    },
+    "bow:1": {
+      "offset": 10240,
+      "length": 10240
+    },
+    "bow:2": {
+      "offset": 20480,
+      "length": 10240
+    },
+    "bowDraw:0": {
+      "offset": 30720,
+      "length": 15360
+    },
+    "bowDraw:1": {
+      "offset": 46080,
+      "length": 15360
+    },
+    "bowDraw:2": {
+      "offset": 61440,
+      "length": 15360
+    },
+    "techShot:0": {
+      "offset": 76800,
+      "length": 7680
+    },
+    "techShot:1": {
+      "offset": 84480,
+      "length": 7680
+    },
+    "techShot:2": {
+      "offset": 92160,
+      "length": 7680
+    },
+    "robotShot:0": {
+      "offset": 99840,
+      "length": 6400
+    },
+    "robotShot:1": {
+      "offset": 106240,
+      "length": 6400
+    },
+    "robotShot:2": {
+      "offset": 112640,
+      "length": 6400
+    },
+    "flesh:0": {
+      "offset": 119040,
+      "length": 7360
+    },
+    "flesh:1": {
+      "offset": 126400,
+      "length": 7360
+    },
+    "flesh:2": {
+      "offset": 133760,
+      "length": 7360
+    },
+    "wood:0": {
+      "offset": 141120,
+      "length": 7680
+    },
+    "wood:1": {
+      "offset": 148800,
+      "length": 7680
+    },
+    "wood:2": {
+      "offset": 156480,
+      "length": 7680
+    },
+    "stone:0": {
+      "offset": 164160,
+      "length": 12160
+    },
+    "stone:1": {
+      "offset": 176320,
+      "length": 12160
+    },
+    "stone:2": {
+      "offset": 188480,
+      "length": 12160
+    },
+    "metal:0": {
+      "offset": 200640,
+      "length": 12800
+    },
+    "metal:1": {
+      "offset": 213440,
+      "length": 12800
+    },
+    "metal:2": {
+      "offset": 226240,
+      "length": 12800
+    },
+    "spectral:0": {
+      "offset": 239040,
+      "length": 12160
+    },
+    "spectral:1": {
+      "offset": 251200,
+      "length": 12160
+    },
+    "spectral:2": {
+      "offset": 263360,
+      "length": 12160
+    },
+    "light:0": {
+      "offset": 275520,
+      "length": 11520
+    },
+    "light:1": {
+      "offset": 287040,
+      "length": 11520
+    },
+    "light:2": {
+      "offset": 298560,
+      "length": 11520
+    },
+    "meteor:0": {
+      "offset": 310080,
+      "length": 16000
+    },
+    "meteor:1": {
+      "offset": 326080,
+      "length": 16000
+    },
+    "meteor:2": {
+      "offset": 342080,
+      "length": 16000
+    },
+    "breeze:0": {
+      "offset": 358080,
+      "length": 15360
+    },
+    "breeze:1": {
+      "offset": 373440,
+      "length": 15360
+    },
+    "breeze:2": {
+      "offset": 388800,
+      "length": 15360
+    },
+    "force:0": {
+      "offset": 404160,
+      "length": 10880
+    },
+    "force:1": {
+      "offset": 415040,
+      "length": 10880
+    },
+    "force:2": {
+      "offset": 425920,
+      "length": 10880
+    },
+    "tech:0": {
+      "offset": 436800,
+      "length": 9600
+    },
+    "tech:1": {
+      "offset": 446400,
+      "length": 9600
+    },
+    "tech:2": {
+      "offset": 456000,
+      "length": 9600
+    },
+    "roll:0": {
+      "offset": 465600,
+      "length": 13760
+    },
+    "roll:1": {
+      "offset": 479360,
+      "length": 13760
+    },
+    "roll:2": {
+      "offset": 493120,
+      "length": 13760
+    },
+    "step:0": {
+      "offset": 506880,
+      "length": 4480
+    },
+    "step:1": {
+      "offset": 511360,
+      "length": 4480
+    },
+    "step:2": {
+      "offset": 515840,
+      "length": 4480
+    },
+    "stepTech:0": {
+      "offset": 520320,
+      "length": 5120
+    },
+    "stepTech:1": {
+      "offset": 525440,
+      "length": 5120
+    },
+    "stepTech:2": {
+      "offset": 530560,
+      "length": 5120
+    },
+    "hurt:0": {
+      "offset": 535680,
+      "length": 10880
+    },
+    "hurt:1": {
+      "offset": 546560,
+      "length": 10880
+    },
+    "hurt:2": {
+      "offset": 557440,
+      "length": 10880
+    },
+    "select:0": {
+      "offset": 568320,
+      "length": 5120
+    },
+    "select:1": {
+      "offset": 573440,
+      "length": 5120
+    },
+    "select:2": {
+      "offset": 578560,
+      "length": 5120
+    },
+    "recharge:0": {
+      "offset": 583680,
+      "length": 11520
+    },
+    "recharge:1": {
+      "offset": 595200,
+      "length": 11520
+    },
+    "recharge:2": {
+      "offset": 606720,
+      "length": 11520
+    },
+    "chime:0": {
+      "offset": 618240,
+      "length": 23040
+    },
+    "chime:1": {
+      "offset": 641280,
+      "length": 23040
+    },
+    "chime:2": {
+      "offset": 664320,
+      "length": 23040
+    },
+    "shield:0": {
+      "offset": 687360,
+      "length": 10880
+    },
+    "shield:1": {
+      "offset": 698240,
+      "length": 10880
+    },
+    "shield:2": {
+      "offset": 709120,
+      "length": 10880
+    },
+    "summon:0": {
+      "offset": 720000,
+      "length": 20800
+    },
+    "summon:1": {
+      "offset": 740800,
+      "length": 20800
+    },
+    "summon:2": {
+      "offset": 761600,
+      "length": 20800
+    },
+    "repair:0": {
+      "offset": 782400,
+      "length": 16000
+    },
+    "repair:1": {
+      "offset": 798400,
+      "length": 16000
+    },
+    "repair:2": {
+      "offset": 814400,
+      "length": 16000
+    },
+    "mech:0": {
+      "offset": 830400,
+      "length": 28800
+    },
+    "mech:1": {
+      "offset": 859200,
+      "length": 28800
+    },
+    "mech:2": {
+      "offset": 888000,
+      "length": 28800
+    },
+    "dance:0": {
+      "offset": 916800,
+      "length": 24000
+    },
+    "dance:1": {
+      "offset": 940800,
+      "length": 24000
+    },
+    "dance:2": {
+      "offset": 964800,
+      "length": 24000
+    },
+    "explosion:0": {
+      "offset": 988800,
+      "length": 28800
+    },
+    "explosion:1": {
+      "offset": 1017600,
+      "length": 28800
+    },
+    "explosion:2": {
+      "offset": 1046400,
+      "length": 28800
+    },
+    "boundary:0": {
+      "offset": 1075200,
+      "length": 19200
+    },
+    "boundary:1": {
+      "offset": 1094400,
+      "length": 19200
+    },
+    "boundary:2": {
+      "offset": 1113600,
+      "length": 19200
+    },
+    "bossIntro:0": {
+      "offset": 1132800,
+      "length": 48000
+    },
+    "bossIntro:1": {
+      "offset": 1180800,
+      "length": 48000
+    },
+    "bossIntro:2": {
+      "offset": 1228800,
+      "length": 48000
+    },
+    "bossWarning:0": {
+      "offset": 1276800,
+      "length": 24000
+    },
+    "bossWarning:1": {
+      "offset": 1300800,
+      "length": 24000
+    },
+    "bossWarning:2": {
+      "offset": 1324800,
+      "length": 24000
+    },
+    "wraithAttack:0": {
+      "offset": 1348800,
+      "length": 14400
+    },
+    "wraithAttack:1": {
+      "offset": 1363200,
+      "length": 14400
+    },
+    "wraithAttack:2": {
+      "offset": 1377600,
+      "length": 14400
+    },
+    "wraithHurt:0": {
+      "offset": 1392000,
+      "length": 11200
+    },
+    "wraithHurt:1": {
+      "offset": 1403200,
+      "length": 11200
+    },
+    "wraithHurt:2": {
+      "offset": 1414400,
+      "length": 11200
+    },
+    "wraithDeath:0": {
+      "offset": 1425600,
+      "length": 28800
+    },
+    "wraithDeath:1": {
+      "offset": 1454400,
+      "length": 28800
+    },
+    "wraithDeath:2": {
+      "offset": 1483200,
+      "length": 28800
+    },
+    "archerAttack:0": {
+      "offset": 1512000,
+      "length": 10240
+    },
+    "archerAttack:1": {
+      "offset": 1522240,
+      "length": 10240
+    },
+    "archerAttack:2": {
+      "offset": 1532480,
+      "length": 10240
+    },
+    "archerHurt:0": {
+      "offset": 1542720,
+      "length": 8960
+    },
+    "archerHurt:1": {
+      "offset": 1551680,
+      "length": 8960
+    },
+    "archerHurt:2": {
+      "offset": 1560640,
+      "length": 8960
+    },
+    "archerDeath:0": {
+      "offset": 1569600,
+      "length": 20800
+    },
+    "archerDeath:1": {
+      "offset": 1590400,
+      "length": 20800
+    },
+    "archerDeath:2": {
+      "offset": 1611200,
+      "length": 20800
+    },
+    "bruteAttack:0": {
+      "offset": 1632000,
+      "length": 19840
+    },
+    "bruteAttack:1": {
+      "offset": 1651840,
+      "length": 19840
+    },
+    "bruteAttack:2": {
+      "offset": 1671680,
+      "length": 19840
+    },
+    "bruteHurt:0": {
+      "offset": 1691520,
+      "length": 12800
+    },
+    "bruteHurt:1": {
+      "offset": 1704320,
+      "length": 12800
+    },
+    "bruteHurt:2": {
+      "offset": 1717120,
+      "length": 12800
+    },
+    "bruteDeath:0": {
+      "offset": 1729920,
+      "length": 32000
+    },
+    "bruteDeath:1": {
+      "offset": 1761920,
+      "length": 32000
+    },
+    "bruteDeath:2": {
+      "offset": 1793920,
+      "length": 32000
+    },
+    "sentinelAttack:0": {
+      "offset": 1825920,
+      "length": 15360
+    },
+    "sentinelAttack:1": {
+      "offset": 1841280,
+      "length": 15360
+    },
+    "sentinelAttack:2": {
+      "offset": 1856640,
+      "length": 15360
+    },
+    "sentinelHurt:0": {
+      "offset": 1872000,
+      "length": 10880
+    },
+    "sentinelHurt:1": {
+      "offset": 1882880,
+      "length": 10880
+    },
+    "sentinelHurt:2": {
+      "offset": 1893760,
+      "length": 10880
+    },
+    "sentinelDeath:0": {
+      "offset": 1904640,
+      "length": 25600
+    },
+    "sentinelDeath:1": {
+      "offset": 1930240,
+      "length": 25600
+    },
+    "sentinelDeath:2": {
+      "offset": 1955840,
+      "length": 25600
+    },
+    "pickup:0": {
+      "offset": 1981440,
+      "length": 10240
+    },
+    "pickup:1": {
+      "offset": 1991680,
+      "length": 10240
+    },
+    "pickup:2": {
+      "offset": 2001920,
+      "length": 10240
+    },
+    "defeat:0": {
+      "offset": 2012160,
+      "length": 38400
+    },
+    "defeat:1": {
+      "offset": 2050560,
+      "length": 38400
+    },
+    "defeat:2": {
+      "offset": 2088960,
+      "length": 38400
+    },
+    "ambience:0": {
+      "offset": 2127360,
+      "length": 128000
+    },
+    "ambience:1": {
+      "offset": 2255360,
+      "length": 128000
+    },
+    "ambience:2": {
+      "offset": 2383360,
+      "length": 128000
+    }
+  }
+}

@@ -241,7 +241,6 @@ function makeOverlay(index) {
     drawDisc(pixels, x, y, 0.9 + (mote % 2) * 0.55, [201, 255, 244], 155);
   }
 
-  // Face, torso, arms, hands, bow and upper legs occupy the locked core.
   for (let y = 0; y < 540; y += 1) {
     for (let x = 0; x < 425; x += 1) {
       if (pixels[(y * width + x) * 4 + 3] !== 0) throw new Error(`Dynamic overlay entered locked body core at ${x},${y}`);
